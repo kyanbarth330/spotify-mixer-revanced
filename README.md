@@ -1,31 +1,34 @@
-# Spotify Mixer Patcher
+# Spotify Mixer Installer (experimental)
 
-One Android installer app, built with GitHub Actions.
+One Android installer selects **your own exact Spotify 9.1.90.2270 APK**, injects a resource-free Mixer menu, rebuilds and signs the APK locally, and opens Android's installation confirmation.
 
-## Build and install on Android
+The menu contains two editable playlist labels/links and a saved 0–100% ratio. **It does not select Spotify playlists, mix playback, change the queue, or implement premium features.** The entry is a floating Mixer button in `SpotifyMainActivity`, not a row in Spotify Settings.
 
-1. Open [Build Android patcher prototype](../../actions/workflows/build-installer.yml).
-2. Run the workflow and wait for a successful result.
-3. Download the `spotify-mixer-patcher-prototype` artifact ZIP.
-4. Extract and install `installer-debug.apk`.
+## Build
 
-## Current functionality
+JDK 17, Gradle 8.10.2, Android SDK platform 35 and build-tools 35.0.0:
 
-- Select a local APK using Android's system document picker.
-- Verify the APK package name, version, DEX and manifest presence.
-- Compute SHA-256 for the selected APK.
-- Preview the intended Spotify Mixer interface **inside the patcher** (two playlist placeholders, ratio slider, start placeholder).
+```sh
+gradle :installer:assembleDebug :installer:testDebugUnitTest --no-daemon
+```
 
-## Not implemented yet
+Or run [Build Android Mixer installer](../../actions/workflows/build-installer.yml) and download `spotify-mixer-installer-experimental`. Install `installer-debug.apk`; it bundles the project's menu DEX and patch libraries, **no Spotify binary**. Keep the same installer signing key for updates; fresh CI debug keys can require reinstalling the installer, which also deletes its local Spotify signing key.
 
-- Inject a Settings menu entry into Spotify.
-- Patch Spotify bytecode/resources, rebuild, align and sign the modified APK.
-- Install patched Spotify.
+## Use
 
-**The patch and install controls remain disabled. This is not yet a working Spotify modification.** A normal Android app cannot modify the already-installed Spotify package in place. Any eventual APK installation requires Android's confirmation and may require uninstalling a differently signed Spotify build.
+1. Install the installer on Android 7.0+ and select the original APK through the document picker.
+2. Tap **Bouw en onderteken**. The installer checks the exact input hash, injects one call into the main Activity, appends `classes18.dex`, rebuilds with aligned native libraries, and verifies its new v2 signature.
+3. Tap **Open Android-installatie**. Grant this installer permission to install apps if Android requests it, then confirm the system installation screen.
+4. Open Spotify and look for **Mixer**. Menu visibility, login and playback need device validation; see [test status](docs/VALIDATION.md).
 
-## Research
+An official Spotify install uses a different signing certificate and cannot be updated with this output. Removing Spotify can delete local downloads. This installer never automatically removes Spotify. The signing key stays in AndroidKeyStore; removing the installer or clearing its data loses that key and prevents signing compatible future Spotify updates.
 
-See [docs/RESEARCH.md](docs/RESEARCH.md). The repository contains original project source, not Spotify binaries. Do not commit proprietary Spotify APKs or signing keys.
+Only SHA-256 `5c05366de31788fd0eec6e046c3610311acf5e63c15345e5bdaca6e8f09fb3b4` is accepted. Other builds, split APKs and already-patched inputs are unsupported. Allow at least 700 MB free storage. Low-memory devices may fail during DEX rebuilding.
 
-Not affiliated with Spotify or ReVanced.
+## Evidence and limitations
+
+- [APK research and patch design](docs/RESEARCH.md)
+- [Validation results and repeatable tests](docs/VALIDATION.md)
+- [On-device installer architecture](docs/INSTALLER.md)
+
+No Spotify APK, extracted proprietary code, or private signing key belongs in this repository or CI artifacts. Not affiliated with Spotify or ReVanced; this implementation uses dexlib2 and Android apksig directly, not a ReVanced patch bundle.

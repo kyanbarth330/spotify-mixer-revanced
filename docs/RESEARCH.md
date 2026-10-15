@@ -55,3 +55,29 @@ Read-only method-table parsing of the supplied APK confirms:
 - `Lcom/spotify/localfiles/settings/localfiles/impl/LocalFilesLibrarySettingsItemFactoryImpl;` declares `create` methods.
 
 This establishes that the named settings classes are not yet a proven global settings list injection point. `LocalFilesLibrarySettingsItemFactoryImpl` appears specific to local-files settings. A full call-graph/decompilation of the obfuscated settings screen is still required before producing a real patch.
+
+## Concrete patch design (2026-10-16)
+
+The attached file, not a replacement download, is the exact input:
+
+| Property | Observed |
+| --- | --- |
+| SHA-256 | `5c05366de31788fd0eec6e046c3610311acf5e63c15345e5bdaca6e8f09fb3b4` |
+| Bytes | 142,124,037 |
+| Package/version | `com.spotify.music` / `9.1.90.2270` / code `147078674` |
+| Minimum/target SDK | 24 / 37 |
+| ZIP entries | 4,874 |
+| DEX/classes | 17 / 102,449 |
+| Native libraries | 40 across arm64-v8a, armeabi-v7a, x86, x86_64 |
+| Original signatures | v2 and v3 verified with SDK 35 apksigner |
+| Certificate SHA-256 | `6505b181933344f93893d586e399b94616183f04349cb572a9e81a3335e28ffd` |
+
+All DEX header SHA-1 signatures and Adler-32 checksums passed. Read-only ZIP CRC and ELF inventory are reproducible with `python3 tools/audit_apk.py /path/to/input.apk`. Native ELF load alignments include 4,096 and 16,384 bytes. ZIP alignment alone does not establish 16 KB device compatibility.
+
+The manifest declares `com.spotify.music.SpotifyMainActivity` and aliases targeting it. That class is defined in `classes2.dex` and has an `onResume()V` implementation. This provides a narrower injection route than reverse engineering the entire obfuscated Settings renderer. `classes2.dex` starts with 65,532 method IDs: code must stay out of this nearly full DEX; the hook adds one reference and the payload goes into DEX 18.
+
+The existing Python metadata parser incorrectly checked for the literal characters `dex\\n`; it now checks the newline in the DEX magic. Its `methods` list is method-ID references grouped by defining type, not proof of declared implementations. The patch engine traverses actual method implementations instead.
+
+Earlier sections describe the prior prototype and historical research. They are not evidence that the current code cannot patch; see VALIDATION.md for current measured results. This is a targeted structural investigation and patch proof, not a complete semantic/security audit of 102,449 classes. Spotify authentication, network behavior, anti-tamper reactions and playback after resigning are not established by static analysis or signature verification.
+
+Primary implementation references: [dexlib2 MutableMethodImplementation](https://android.googlesource.com/platform/external/smali/+/4f26204/dexlib2/src/main/java/org/jf/dexlib2/builder/MutableMethodImplementation.java), [Android apksig](https://android.googlesource.com/platform/tools/apksig/), [AndroidKeyStore RSA key](https://android.googlesource.com/platform/frameworks/base/+/f7167e8/keystore/java/android/security/keystore/AndroidKeyStoreRSAPrivateKey.java). apksig is designed as a host library; using it on Android requires device testing in addition to successful compilation and host signing.
