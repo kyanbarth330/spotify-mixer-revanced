@@ -1,21 +1,31 @@
-# Spotify Mixer ReVanced
+# Spotify Mixer Patcher
 
-Experimental open-source prototype targeting Spotify Android 9.1.90.2270.
+One Android installer app, built with GitHub Actions.
 
-**Status:** source prototype only. This is not yet a functional ReVanced patch or an installable modified Spotify APK.
+## Build and install on Android
 
-## Intended features
-- Spotify Settings > Spotify Mixer (not integrated yet)
-- Select Playlist A and B (placeholders)
-- Mix ratio slider 0–100%
-- Start Mixer (placeholder)
+1. Open [Build Android patcher prototype](../../actions/workflows/build-installer.yml).
+2. Run the workflow and wait for a successful result.
+3. Download the `spotify-mixer-patcher-prototype` artifact ZIP.
+4. Extract and install `installer-debug.apk`.
 
-The Android Activity prototype is in `prototype/MixerActivity.java`. It cannot be injected into Spotify without first identifying a compatible settings navigation hook and building an actual patch.
+## Current functionality
 
-## Roadmap
-1. Reverse engineer the settings entry and navigation in a compatible APK.
-2. Build and test a ReVanced patch for that version.
-3. Set up reproducible patch builds and installation instructions.
-4. Explore actual playback queue mixing without the Spotify Web API.
+- Select a local APK using Android's system document picker.
+- Verify the APK package name, version, DEX and manifest presence.
+- Compute SHA-256 for the selected APK.
+- Preview the intended Spotify Mixer interface **inside the patcher** (two playlist placeholders, ratio slider, start placeholder).
 
-Do not commit Spotify APK binaries, extracted proprietary code, or signing keys. This project is not affiliated with Spotify or ReVanced.
+## Not implemented yet
+
+- Inject a Settings menu entry into Spotify.
+- Patch Spotify bytecode/resources, rebuild, align and sign the modified APK.
+- Install patched Spotify.
+
+**The patch and install controls remain disabled. This is not yet a working Spotify modification.** A normal Android app cannot modify the already-installed Spotify package in place. Any eventual APK installation requires Android's confirmation and may require uninstalling a differently signed Spotify build.
+
+## Research
+
+See [docs/RESEARCH.md](docs/RESEARCH.md). The repository contains original project source, not Spotify binaries. Do not commit proprietary Spotify APKs or signing keys.
+
+Not affiliated with Spotify or ReVanced.
