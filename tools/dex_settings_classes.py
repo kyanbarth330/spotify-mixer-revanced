@@ -15,7 +15,7 @@ def uleb(data, offset):
     raise ValueError("Invalid ULEB128")
 
 def parse(data):
-    if data[:4] != b"dex\\n":
+    if data[:4] != b"dex\n":
         raise ValueError("Not a DEX")
     u32 = lambda off: struct.unpack_from("<I", data, off)[0]
     s_count, s_off = u32(0x38), u32(0x3c)

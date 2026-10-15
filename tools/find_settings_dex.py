@@ -12,7 +12,7 @@ terms = [b"SettingsPage", b"SettingsActivity", b"settings_page", b"SettingsRow"]
 result = {}
 with zipfile.ZipFile(args.apk) as apk:
     for name in sorted(apk.namelist()):
-        if not re.fullmatch(r"classes(?:[0-9]+)?\\.dex", name):
+        if not re.fullmatch(r"classes(?:[0-9]+)?\.dex", name):
             continue
         data = apk.read(name)
         hits = {}

@@ -6,11 +6,31 @@ android {
         applicationId 'org.example.spotifymixer.patcher'
         minSdk 24
         targetSdk 28
-        versionCode 1
-        versionName '0.1'
+        versionCode 2
+        versionName '0.2'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 }
+dependencies {
+    implementation project(':engine')
+    implementation 'androidx.core:core:1.13.1'
+}
+// Bundle only our original UI DEX, never a Spotify APK.
+def runtimeAssets = layout.buildDirectory.dir('generated/runtimeAssets')
+android.sourceSets.main.assets.srcDir(runtimeAssets)
+tasks.register('bundleMixerRuntime') {
+    dependsOn ':runtime:assembleDebug'
+    inputs.file(project(':runtime').layout.buildDirectory.file('outputs/apk/debug/runtime-debug.apk'))
+    outputs.dir(runtimeAssets)
+    doLast {
+        def apk = project(':runtime').file('build/outputs/apk/debug/runtime-debug.apk')
+        def dex = zipTree(apk).matching { include 'classes.dex' }.singleFile
+        def out = runtimeAssets.get().file('mixer.dex').asFile
+        out.parentFile.mkdirs()
+        out.bytes = dex.bytes
+    }
+}
+tasks.named('preBuild').configure { dependsOn 'bundleMixerRuntime' }

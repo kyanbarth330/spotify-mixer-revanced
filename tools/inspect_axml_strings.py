@@ -13,11 +13,15 @@ def u32(buf, offset):
 
 def var8(buf, offset):
     first = buf[offset]
-    return ((first & 0x7f) << 7) | buf[offset+1], offset+2 if first & 0x80 else offset+1
+    if first & 0x80:
+        return ((first & 0x7f) << 8) | buf[offset+1], offset+2
+    return first, offset+1
 
 def var16(buf, offset):
     first = u16(buf, offset)
-    return ((first & 0x7fff) << 16) | u16(buf, offset+2), offset+4 if first & 0x8000 else offset+2
+    if first & 0x8000:
+        return ((first & 0x7fff) << 16) | u16(buf, offset+2), offset+4
+    return first, offset+2
 
 def strings_from_xml(data):
     if u16(data, 0) != 0x0003:

@@ -1,0 +1,13 @@
+plugins { id 'java-library' }
+java { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+dependencies {
+    api 'org.smali:dexlib2:2.5.2'
+    api 'com.android.tools.build:apksig:8.7.3'
+    testImplementation 'junit:junit:4.13.2'
+}
+tasks.register('validateLocalApk', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'org.example.spotifymixer.engine.LocalValidation'
+    if (project.hasProperty('apk')) args project.property('apk'), project.property('runtimeDex'), project.property('testKey'), project.property('validationDir')
+}

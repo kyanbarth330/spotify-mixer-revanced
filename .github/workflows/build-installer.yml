@@ -1,9 +1,12 @@
-name: Build Android patcher prototype
+name: Build Spotify Mixer installer
 on:
   workflow_dispatch:
   push:
     paths:
       - 'installer/**'
+      - 'engine/**'
+      - 'runtime/**'
+      - 'tools/**'
       - 'settings.gradle'
       - 'build.gradle'
       - '.github/workflows/build-installer.yml'
@@ -26,9 +29,9 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME"
           test -d "$ANDROID_HOME/platforms/android-35" || "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platforms;android-35" "build-tools;35.0.0"
       - name: Build debug installer
-        run: gradle :installer:assembleDebug --no-daemon
+        run: gradle :engine:test :installer:assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: spotify-mixer-patcher-prototype
+          name: spotify-mixer-installer
           path: installer/build/outputs/apk/debug/installer-debug.apk
           if-no-files-found: error

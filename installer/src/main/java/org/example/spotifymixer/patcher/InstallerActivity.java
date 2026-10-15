@@ -1,206 +1,104 @@
 package org.example.spotifymixer.patcher;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.content.Intent;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.ApplicationInfo;
 import android.net.Uri;
-import android.graphics.Color;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import android.widget.SeekBar;
-import android.app.AlertDialog;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.security.MessageDigest;
-import java.util.Locale;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
+import android.provider.Settings;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
+import android.widget.*;
+import androidx.core.content.FileProvider;
+import java.io.*;
+import java.security.*;
+import java.security.cert.X509Certificate;
+import org.example.spotifymixer.engine.Patcher;
 
-/**
- * On-device Spotify APK preflight. Does not modify, resign or install Spotify.
- * Only operates on a document explicitly selected by the user.
- */
-public class InstallerActivity extends Activity {
-    private static final int REQUEST_APK = 101;
-    private static final long MAX_APK_BYTES = 300L * 1024 * 1024;
+/** One local APK-in / signed APK-out flow. Android owns the install confirmation. */
+public final class InstallerActivity extends Activity {
     private TextView status;
-    private Button selectButton;
-
-    @Override public void onCreate(Bundle state) {
+    private Button select, install;
+    private File signed;
+    private volatile boolean busy;
+    public void onCreate(Bundle state) {
         super.onCreate(state);
-        LinearLayout root = new LinearLayout(this);
-        root.setPadding(32, 48, 32, 32);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.rgb(18, 18, 18));
-        TextView heading = new TextView(this);
-        heading.setText("Spotify Mixer Patcher");
-        heading.setTextSize(24);
-        heading.setTextColor(Color.WHITE);
-        root.addView(heading);
+        signed = new File(new File(getFilesDir(), "output"), "spotify-mixer.apk");
+        LinearLayout box = new LinearLayout(this); box.setOrientation(1); box.setPadding(32,48,32,24);
+        TextView title = new TextView(this); title.setText("Spotify Mixer Installer"); title.setTextSize(24); box.addView(title);
         status = new TextView(this);
-        status.setTextColor(Color.WHITE);
-        status.setText("Kies je eigen Spotify APK. De app controleert pakketnaam, versie en bestandsstructuur. Er wordt nog niets gepatcht.");
-        root.addView(status);
-        selectButton = new Button(this);
-        selectButton.setText("1. Selecteer Spotify APK");
-        selectButton.setOnClickListener(v -> {
-            Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-            picker.addCategory(Intent.CATEGORY_OPENABLE);
-            picker.setType("*/*");
-            startActivityForResult(picker, REQUEST_APK);
+        status.setText("Selecteer de onderzochte Spotify 9.1.90.2270 APK. Deze installer injecteert een UI-menu, bouwt en ondertekent lokaal. Playlist afspelen/mengen is nog niet beschikbaar. Reken op minimaal 1 GB vrije opslag en veel werkgeheugen."); box.addView(status);
+        select = new Button(this); select.setText("1. Kies APK en bouw Mixer"); box.addView(select);
+        select.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE);
+            startActivityForResult(intent, 101);
         });
-        root.addView(selectButton);
-        Button installed = new Button(this);
-        installed.setText("Zoek geïnstalleerde Spotify");
-        installed.setOnClickListener(v -> detectInstalledSpotify());
-        root.addView(installed);
-        Button preview = new Button(this);
-        preview.setText("Bekijk Spotify Mixer UI");
-        preview.setOnClickListener(v -> showMixerPreview());
-        root.addView(preview);
-        Button patch = new Button(this);
-        patch.setText("2. Patch Spotify UI (in ontwikkeling)");
-        patch.setEnabled(false);
-        root.addView(patch);
-        Button install = new Button(this);
-        install.setText("3. Installeer aangepaste Spotify (in ontwikkeling)");
-        install.setEnabled(false);
-        root.addView(install);
-        setContentView(root);
+        install = new Button(this); install.setText("2. Start Android-installatie"); install.setEnabled(false); box.addView(install);
+        install.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("Aangepaste Spotify installeren")
+            .setMessage("De handtekening verschilt van originele Spotify. Android kan de update weigeren. Verwijderen van Spotify wist lokale appgegevens en downloads; deze installer verwijdert niets automatisch. Ga alleen verder als je dat begrijpt.")
+            .setPositiveButton("Doorgaan", (d,w) -> launchInstall()).setNegativeButton("Annuleren", null).show());
+        setContentView(box);
+        // Never offer an output left by an interrupted or previous session without verification.
+        signed.delete();
     }
-
-    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != REQUEST_APK || resultCode != RESULT_OK || data == null || data.getData() == null) return;
+    protected void onActivityResult(int req, int result, Intent data) {
+        super.onActivityResult(req,result,data);
+        if (req == 102) { if (getPackageManager().canRequestPackageInstalls()) launchInstall(); return; }
+        if (req != 101 || result != RESULT_OK || data == null || data.getData() == null || busy) return;
+        busy = true; select.setEnabled(false); install.setEnabled(false); signed.delete();
         Uri uri = data.getData();
-        selectButton.setEnabled(false);
-        status.setText("APK wordt gecontroleerd...");
-        new Thread(() -> inspect(uri)).start();
+        new Thread(() -> build(uri), "mixer-build").start();
     }
-
-    private void detectInstalledSpotify() {
+    private void build(Uri uri) {
+        File input = new File(getCacheDir(),"input.apk");
+        File runtime = new File(getCacheDir(),"mixer.dex");
+        File unsigned = new File(getCacheDir(),"unsigned.apk");
         try {
-            PackageInfo info = getPackageManager().getPackageInfo("com.spotify.music", 0);
-            ApplicationInfo app = getPackageManager().getApplicationInfo("com.spotify.music", 0);
-            String version = info.versionName == null ? "onbekend" : info.versionName;
-            boolean split = app.splitSourceDirs != null && app.splitSourceDirs.length > 0;
-            File base = new File(app.sourceDir);
-            String message = "Geïnstalleerde Spotify gevonden!"
-                + "\\nVersie: " + version
-                + "\\nBasis-APK leesbaar: " + (base.isFile() && base.canRead() ? "ja" : "nee")
-                + "\\nSplit APK's: " + (split ? app.splitSourceDirs.length : 0)
-                + "\\n\\n" + (split
-                    ? "Dit is een split-installatie. Alleen de basis-APK patchen is niet voldoende."
-                    : "Een geïnstalleerde APK kan worden onderzocht, maar nog niet gepatcht.")
-                + "\\nDe huidige installatie wordt niet gewijzigd.";
-            status.setText(message.replace("\\n", "\n"));
-        } catch (PackageManager.NameNotFoundException e) {
-            status.setText("Spotify niet gevonden. Selecteer een originele Spotify-APK via de bestandskiezer.");
-        } catch (Exception e) {
-            status.setText("Spotify detecteren mislukt: " + e.getMessage());
-        }
-    }
-
-    private void showMixerPreview() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(32, 24, 32, 8);
-        TextView ratio = new TextView(this);
-        ratio.setText("Playlist A: 70% · Playlist B: 30%");
-        Button a = new Button(this);
-        a.setText("Selecteer Playlist A");
-        a.setOnClickListener(v -> new AlertDialog.Builder(this)
-            .setMessage("Playlistselectie is nog niet beschikbaar.")
-            .setPositiveButton("OK", null).show());
-        Button b = new Button(this);
-        b.setText("Selecteer Playlist B");
-        b.setOnClickListener(v -> new AlertDialog.Builder(this)
-            .setMessage("Playlistselectie is nog niet beschikbaar.")
-            .setPositiveButton("OK", null).show());
-        SeekBar slider = new SeekBar(this);
-        slider.setMax(100);
-        slider.setProgress(70);
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                ratio.setText("Playlist A: " + progress + "% · Playlist B: " + (100-progress) + "%");
+            if (getFilesDir().getUsableSpace() < 1024L*1024*1024) throw new IOException("Minimaal 1 GB vrije opslag nodig");
+            update("APK kopiëren en controleren…");
+            try (InputStream in = getContentResolver().openInputStream(uri)) { copy(in,input,300L*1024*1024); }
+            try (InputStream in = getAssets().open("mixer.dex")) { copy(in,runtime,16L*1024*1024); }
+            update("Handtekening controleren, DEX injecteren en APK bouwen…");
+            Patcher.patch(input,runtime,unsigned);
+            update("APK ondertekenen en output controleren…");
+            KeyStore store = KeyStore.getInstance("AndroidKeyStore"); store.load(null);
+            String alias = "spotify-mixer-v1";
+            if (!store.containsAlias(alias)) {
+                KeyPairGenerator generator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA,"AndroidKeyStore");
+                generator.initialize(new KeyGenParameterSpec.Builder(alias,KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
+                    .setKeySize(2048).setDigests(KeyProperties.DIGEST_SHA256,KeyProperties.DIGEST_SHA512)
+                    .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1).build());
+                generator.generateKeyPair();
             }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-        Button start = new Button(this);
-        start.setText("Start Mixer");
-        start.setOnClickListener(v -> new AlertDialog.Builder(this)
-            .setMessage("Dit is een UI-voorbeeld. Spotify wordt nog niet aangepast.")
-            .setPositiveButton("OK", null).show());
-        layout.addView(a);
-        layout.addView(b);
-        layout.addView(ratio);
-        layout.addView(slider);
-        layout.addView(start);
-        new AlertDialog.Builder(this).setTitle("Spotify Mixer — UI-voorbeeld")
-            .setView(layout).setPositiveButton("Sluiten", null).show();
-    }
-
-    private void inspect(Uri uri) {
-        File apk = new File(getCacheDir(), "selected-spotify.apk");
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            long count = 0;
-            try (InputStream input = getContentResolver().openInputStream(uri);
-                 FileOutputStream output = new FileOutputStream(apk)) {
-                if (input == null) throw new IllegalArgumentException("Bestand kan niet worden geopend");
-                byte[] buffer = new byte[65536];
-                int read;
-                while ((read = input.read(buffer)) != -1) {
-                    count += read;
-                    if (count > MAX_APK_BYTES) throw new IllegalArgumentException("APK is groter dan 300 MB");
-                    output.write(buffer, 0, read);
-                    digest.update(buffer, 0, read);
-                }
-            }
-            boolean manifest = false, dex = false, settingsLayout = false;
-            int dexCount = 0;
-            try (ZipFile zip = new ZipFile(apk)) {
-                for (java.util.Enumeration<? extends ZipEntry> e = zip.entries(); e.hasMoreElements();) {
-                    String name = e.nextElement().getName();
-                    if ("AndroidManifest.xml".equals(name)) manifest = true;
-                    if (name.matches("classes([0-9]+)?\\.dex")) { dex = true; dexCount++; }
-                    if ("res/layout/settings_page.xml".equals(name)) settingsLayout = true;
-                }
-            }
-            PackageInfo info = getPackageManager().getPackageArchiveInfo(apk.getAbsolutePath(), 0);
-            String pkg = info == null ? "" : info.packageName;
-            String version = info == null ? "onbekend" : info.versionName;
-            boolean spotify = "com.spotify.music".equals(pkg);
-            boolean supported = spotify && "9.1.90.2270".equals(version);
-            String hash = hex(digest.digest());
-            String message = "Pakket: " + (pkg.isEmpty() ? "niet herkend" : pkg)
-                + "\\nVersie: " + version
-                + "\\nDEX-bestanden: " + dexCount
-                + "\\nInstellingenlayout aanwezig: " + (settingsLayout ? "ja" : "nee")
-                + "\\nSHA-256: " + hash
-                + "\\n\\n" + (!manifest || !dex ? "Ongeldige APK-structuur."
-                   : !spotify ? "Dit is geen Spotify-APK."
-                   : !supported ? "Spotify gevonden, maar deze versie is niet het onderzochte doelwit (9.1.90.2270)."
-                   : "Spotify-doelversie herkend. UI-patchmotor nog niet geïmplementeerd.");
-            runOnUiThread(() -> status.setText(message.replace("\\n", "\n")));
-        } catch (Exception ex) {
-            runOnUiThread(() -> status.setText("Controle mislukt: " + ex.getMessage()));
+            signed.getParentFile().mkdirs();
+            Patcher.sign(unsigned,signed,(PrivateKey)store.getKey(alias,null),(X509Certificate)store.getCertificate(alias));
+            String hash = Patcher.hash(signed);
+            update("Menu geïnjecteerd; APK gebouwd en cryptografisch gecontroleerd.\nSHA-256: " + hash + "\nDe werking in Spotify is pas na installatie te beoordelen.");
+            runOnUiThread(() -> install.setEnabled(true));
+        } catch (Exception | OutOfMemoryError ex) {
+            signed.delete(); update("Bouwen mislukt: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
         } finally {
-            // Keep no third-party APK copy on the device.
-            apk.delete();
-            runOnUiThread(() -> selectButton.setEnabled(true));
+            input.delete(); runtime.delete(); unsigned.delete(); busy=false;
+            runOnUiThread(() -> select.setEnabled(true));
         }
     }
-
-    private static String hex(byte[] bytes) {
-        StringBuilder b = new StringBuilder();
-        for (byte value : bytes) b.append(String.format(Locale.US, "%02x", value & 0xff));
-        return b.toString();
+    private void launchInstall() {
+        try {
+            if (!signed.isFile()) throw new IOException("Bouw eerst een APK");
+            if (android.os.Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+                startActivityForResult(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+getPackageName())),102); return;
+            }
+            Uri uri = FileProvider.getUriForFile(this,getPackageName()+".files",signed);
+            Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE).setDataAndType(uri,"application/vnd.android.package-archive")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).putExtra(Intent.EXTRA_RETURN_RESULT,true);
+            startActivityForResult(intent,103);
+        } catch (Exception ex) { update("Installatie starten mislukt: " + ex.getMessage()); }
+    }
+    private void update(String text) { runOnUiThread(() -> status.setText(text)); }
+    private static void copy(InputStream in, File file, long limit) throws IOException {
+        if (in == null) throw new IOException("Bestand niet leesbaar");
+        try (OutputStream out = new FileOutputStream(file)) { byte[] b = new byte[65536]; int n; long total=0;
+            while ((n=in.read(b))!=-1) { total+=n; if(total>limit) throw new IOException("Bestand te groot"); out.write(b,0,n); }
+        }
     }
 }
