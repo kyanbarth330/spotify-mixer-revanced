@@ -1,6 +1,20 @@
 # Validation — 2026-10-16
 
-## Confirmed Gradle build
+## Reported device failure and version 0.3 repair
+
+The user reports that patched Spotify 0.2 closes immediately on opening; the installer itself works. Inspection of the **actual published installer artifact 12015022682** found that `assets/mixer.dex` is only 596 bytes and defines `org.example.spotifymixer.runtime.R`, with no `Mixer` helper. The previous local integration test used a separately compiled full runtime and therefore did not validate the published payload. An unresolved `Mixer.attach` invocation explains an immediate startup failure; a device stack trace has not been collected.
+
+Version 0.3 packages every DEX from the runtime module, appends all of them to Spotify, and rejects a payload without a public static implemented `Mixer.attach(Activity)` method. The final installer artifact is checked in CI before upload. Two new JUnit regressions cover an R-only payload and a helper present in the second DEX (four Java tests total).
+
+### Version 0.3 verification
+
+[Build 38826272783](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38826272783) succeeds, including four Java tests and the final installer asset check. Downloaded artifact `12014794699` contains `mixer-runtime.zip`: `classes.dex` (596 bytes, R) and `classes2.dex` (6,912 bytes, Mixer and helpers), six classes total.
+
+Local integration was repeated using **this exact downloaded runtime ZIP**, not a separately compiled helper. Both runtime DEX files are byte-identical in output `classes18.dex`/`classes19.dex`. Patch/sign/verification pass; 4,861 retained original entries remain unchanged. Independent verification reports valid v2/v3 signatures. Device confirmation of the repaired Spotify build is still pending.
+
+The installer certificates of 0.2 and 0.3 differ because CI creates fresh debug signing keys. Updating 0.2 in place is therefore unsupported. Removing the old installer also loses its Android Keystore key, so the old patched Spotify cannot be updated with the new key. Reinstalling removes local data/downloads. Stable installer signing across CI runs remains a development limitation.
+
+## Earlier confirmed Gradle build
 
 [GitHub Actions run 38825522339](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38825522339) completed successfully: `:engine:test :installer:assembleDebug` on JDK 17 / Gradle 8.10.2 / Android SDK 35. The `spotify-mixer-installer` artifact contains the development installer APK. This confirms compilation, D8 packaging, runtime-DEX bundling and installer APK creation; it does not confirm Android execution.
 
@@ -44,7 +58,7 @@ Keep the proprietary input and generated outputs outside the repository. Generat
 gradle :engine:test :installer:assembleDebug
 gradle :engine:validateLocalApk \
   -Papk=/private/spotify.apk \
-  -PruntimeDex="$PWD/installer/build/generated/runtimeAssets/mixer.dex" \
+  -PruntimeDex="$PWD/installer/build/generated/runtimeAssets/mixer-runtime.zip" \
   -PtestKey=/private/test.p12 \
   -PvalidationDir=/private/validation
 ```
