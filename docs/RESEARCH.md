@@ -19,3 +19,15 @@ UI only: Playlist A/B placeholder buttons, 0–100% slider, Start Mixer placehol
 `python3 tools/inspect_apk.py path/to/spotify.apk`
 
 Do not upload the Spotify APK or decompiled proprietary sources to this public repository.
+
+## Additional binary inspection (2026-10-16)
+
+The user-supplied 9.1.90.2270 APK was inspected locally, without publishing its bytes. Plain ASCII scans found:
+
+- `SettingsPage` in `classes.dex` and `classes2.dex`.
+- `settings_page` in `classes2.dex`.
+- `SettingsActivity` in `classes3.dex`.
+
+These are **search leads, not verified classes/hooks**. DEX binary offsets are not a patch mechanism. The compiled settings layout may not control the live settings navigation. No decompilation, injection, signing or on-device install pipeline has been validated.
+
+The installer now verifies the selected APK package name `com.spotify.music`, exact version `9.1.90.2270`, DEX/manifest presence, and computes SHA-256. It intentionally disables patch/install until a working patch exists.
