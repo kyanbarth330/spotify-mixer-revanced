@@ -1,0 +1,15 @@
+name: Source checks
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify prototype sources
+        run: |
+          test -f README.md
+          test -f prototype/MixerActivity.java
+          grep -q 'class MixerActivity' prototype/MixerActivity.java
+          echo "Source check passed. No APK was built."
