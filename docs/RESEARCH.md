@@ -44,3 +44,14 @@ A local parser traversed the DEX type/class tables (not merely ASCII searches) i
 - `classes8.dex`: `Lcom/spotify/localfiles/settings/localfiles/impl/LocalFilesSettingsItemModule;`
 
 These names are confirmed DEX class descriptors, not guessed. They narrow the investigation to the settings item factory/navigation implementation. A settings page RecyclerView is separately confirmed in the binary layout. **No injection target or tested patch is yet established.**
+
+## DEX method-table inspection
+
+Read-only method-table parsing of the supplied APK confirms:
+
+- `Lcom/spotify/settings/settings/SettingsDelegate;` declares `onIncognitoModeDisabledByTimer`.
+- `Lcom/spotify/settings/settingsimpl/NativeSettings;` declares `create`, `destroy`, `enterAuthenticatedScope`, `exitAuthenticatedScope`, and `setDelegate`.
+- `Lcom/spotify/encoreconsumermobile/elements/settings/SettingsButton;` declares constructors and obfuscated methods `d`, `m`.
+- `Lcom/spotify/localfiles/settings/localfiles/impl/LocalFilesLibrarySettingsItemFactoryImpl;` declares `create` methods.
+
+This establishes that the named settings classes are not yet a proven global settings list injection point. `LocalFilesLibrarySettingsItemFactoryImpl` appears specific to local-files settings. A full call-graph/decompilation of the obfuscated settings screen is still required before producing a real patch.
