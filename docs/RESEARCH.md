@@ -31,3 +31,16 @@ The user-supplied 9.1.90.2270 APK was inspected locally, without publishing its 
 These are **search leads, not verified classes/hooks**. DEX binary offsets are not a patch mechanism. The compiled settings layout may not control the live settings navigation. No decompilation, injection, signing or on-device install pipeline has been validated.
 
 The installer now verifies the selected APK package name `com.spotify.music`, exact version `9.1.90.2270`, DEX/manifest presence, and computes SHA-256. It intentionally disables patch/install until a working patch exists.
+
+## Confirmed class definitions from all 17 DEX files
+
+A local parser traversed the DEX type/class tables (not merely ASCII searches) in the supplied 9.1.90.2270 APK. The following are **actual defined classes**:
+
+- `classes2.dex`: `Lcom/spotify/settings/settings/SettingsDelegate;`
+- `classes2.dex`: `Lcom/spotify/settings/settingsimpl/NativeSettings;`
+- `classes6.dex`: `Lcom/spotify/encoreconsumermobile/elements/settings/SettingsButton;`
+- `classes7.dex`: `Lcom/spotify/localfiles/settings/localfiles/impl/LocalFilesLibrarySettingsItemFactoryImpl;`
+- `classes8.dex`: `Lcom/spotify/localfiles/settings/localfiles/api/LocalFilesLibrarySettingsItemFactory;`
+- `classes8.dex`: `Lcom/spotify/localfiles/settings/localfiles/impl/LocalFilesSettingsItemModule;`
+
+These names are confirmed DEX class descriptors, not guessed. They narrow the investigation to the settings item factory/navigation implementation. A settings page RecyclerView is separately confirmed in the binary layout. **No injection target or tested patch is yet established.**
