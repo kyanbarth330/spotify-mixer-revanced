@@ -99,7 +99,7 @@ public final class Patcher {
         try {
             ApkSigner.SignerConfig config = new ApkSigner.SignerConfig.Builder("mixer", key, Collections.singletonList(cert)).build();
             new ApkSigner.Builder(Collections.singletonList(config)).setInputApk(unsigned).setOutputApk(signed)
-                .setMinSdkVersion(24).setV1SigningEnabled(true).setV2SigningEnabled(true).setV3SigningEnabled(true).setV4SigningEnabled(false).build().sign();
+                .setMinSdkVersion(24).setV1SigningEnabled(false).setV2SigningEnabled(true).setV3SigningEnabled(true).setV4SigningEnabled(false).build().sign();
             ApkVerifier.Result result = new ApkVerifier.Builder(signed).setMinCheckedPlatformVersion(24).build().verify();
             if (!result.isVerified() || !result.isVerifiedUsingV2Scheme()) throw new IOException("Outputhandtekening ongeldig: " + result.getErrors());
         } catch (Exception e) { signed.delete(); throw e; }

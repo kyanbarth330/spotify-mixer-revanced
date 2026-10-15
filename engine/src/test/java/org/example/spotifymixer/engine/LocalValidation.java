@@ -27,7 +27,7 @@ public class LocalValidation {
             }
             if(after.getEntry("classes18.dex")==null) throw new AssertionError("Missing runtime");
         }
-        System.out.println("PASS: exact input, original signature, DEX rewrite, runtime insertion, v1/v2/v3 signing, output verification; preserved entries="+preserved);
+        System.out.println("PASS: exact input, original signature, DEX rewrite, runtime insertion, v2/v3 signing, output verification; preserved entries="+preserved);
         System.out.println("Output SHA-256="+Patcher.hash(signed));
     }
     private static byte[] digest(InputStream in,MessageDigest md)throws Exception { md.reset();byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1)md.update(b,0,n);return md.digest(); }

@@ -1,6 +1,7 @@
 plugins { id 'java-library' }
 java { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
 dependencies {
+    api 'com.google.guava:guava:27.1-android'
     api 'org.smali:dexlib2:2.5.2'
     api 'com.android.tools.build:apksig:8.7.3'
     testImplementation 'junit:junit:4.13.2'
