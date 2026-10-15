@@ -50,7 +50,7 @@ def main():
     with zipfile.ZipFile(args.apk) as apk:
         result = {}
         for name in sorted(apk.namelist()):
-            if re.fullmatch(r"classes(?:[0-9]+)?\\.dex", name):
+            if re.fullmatch(r"classes(?:[0-9]+)?\.dex", name):
                 found = parse(apk.read(name))
                 if found:
                     result[name] = found
