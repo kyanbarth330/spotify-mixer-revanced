@@ -1,5 +1,9 @@
 # Validation — 2026-10-16
 
+## Confirmed Gradle build
+
+[GitHub Actions run 38825522339](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38825522339) completed successfully: `:engine:test :installer:assembleDebug` on JDK 17 / Gradle 8.10.2 / Android SDK 35. The `spotify-mixer-installer` artifact contains the development installer APK. This confirms compilation, D8 packaging, runtime-DEX bundling and installer APK creation; it does not confirm Android execution.
+
 ## Confirmed locally
 
 - Supplied APK: SHA-256 `5c05366de31788fd0eec6e046c3610311acf5e63c15345e5bdaca6e8f09fb3b4`; complete ZIP CRC scan passes; all 17 DEX SHA-1/Adler-32 headers pass.
@@ -9,6 +13,7 @@
 - Original runtime Java compiled against Android 35, converted to DEX with D8 8.7.18/min API 24.
 - `LocalValidation` executed against the actual uploaded Spotify APK: original signature verification, exact hook matching, DEX reconstruction, runtime insertion, APK reconstruction, signing and output signature verification all pass.
 - 4,861 retained ZIP entries were compared by uncompressed SHA-256 and were unchanged. This includes original manifest/resources, other DEX files and all 40 native libraries. Signature metadata, source-stamp hash and patched `classes2.dex` are excluded from that comparison.
+- Independent apksig verification reports `verified=true`, `v1=false`, `v2=true`, `v3=true`, no errors.
 - Resulting ZIP CRC passes; patched DEX SHA-1 passes; all 667 STORED entries remain 16 KiB aligned after signing. Native libraries are DEFLATED, preserving the original method.
 
 The local test used a throwaway software PKCS12 key and a locally compiled 6,336-byte runtime DEX. It does **not** exercise Android Keystore or the exact Gradle-produced runtime. Patched Spotify and test keys are not published.
