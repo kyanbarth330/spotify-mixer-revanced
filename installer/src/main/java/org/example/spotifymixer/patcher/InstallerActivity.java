@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ApplicationInfo;
 import android.net.Uri;
 import android.graphics.Color;
 import android.widget.Button;
@@ -54,6 +55,10 @@ public class InstallerActivity extends Activity {
             startActivityForResult(picker, REQUEST_APK);
         });
         root.addView(selectButton);
+        Button installed = new Button(this);
+        installed.setText("Zoek geïnstalleerde Spotify");
+        installed.setOnClickListener(v -> detectInstalledSpotify());
+        root.addView(installed);
         Button preview = new Button(this);
         preview.setText("Bekijk Spotify Mixer UI");
         preview.setOnClickListener(v -> showMixerPreview());
@@ -76,6 +81,29 @@ public class InstallerActivity extends Activity {
         selectButton.setEnabled(false);
         status.setText("APK wordt gecontroleerd...");
         new Thread(() -> inspect(uri)).start();
+    }
+
+    private void detectInstalledSpotify() {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo("com.spotify.music", 0);
+            ApplicationInfo app = getPackageManager().getApplicationInfo("com.spotify.music", 0);
+            String version = info.versionName == null ? "onbekend" : info.versionName;
+            boolean split = app.splitSourceDirs != null && app.splitSourceDirs.length > 0;
+            File base = new File(app.sourceDir);
+            String message = "Geïnstalleerde Spotify gevonden!"
+                + "\\nVersie: " + version
+                + "\\nBasis-APK leesbaar: " + (base.isFile() && base.canRead() ? "ja" : "nee")
+                + "\\nSplit APK's: " + (split ? app.splitSourceDirs.length : 0)
+                + "\\n\\n" + (split
+                    ? "Dit is een split-installatie. Alleen de basis-APK patchen is niet voldoende."
+                    : "Een geïnstalleerde APK kan worden onderzocht, maar nog niet gepatcht.")
+                + "\\nDe huidige installatie wordt niet gewijzigd.";
+            status.setText(message.replace("\\n", "\n"));
+        } catch (PackageManager.NameNotFoundException e) {
+            status.setText("Spotify niet gevonden. Selecteer een originele Spotify-APK via de bestandskiezer.");
+        } catch (Exception e) {
+            status.setText("Spotify detecteren mislukt: " + e.getMessage());
+        }
     }
 
     private void showMixerPreview() {
