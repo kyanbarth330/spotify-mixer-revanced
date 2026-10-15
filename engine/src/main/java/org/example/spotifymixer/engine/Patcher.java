@@ -61,12 +61,52 @@ public final class Patcher {
         DexPool.writeTo(store, new ImmutableDexFile(dex.getOpcodes(), classes));
         return store.getData();
     }
+    public static List<byte[]> validateRuntime(File runtime) throws Exception {
+        List<byte[]> payloads = new ArrayList<>();
+        try (InputStream in = new FileInputStream(runtime)) {
+            if (in.read() == 'd') {
+                try (InputStream dex = new FileInputStream(runtime)) { payloads.add(read(dex)); }
+            } else {
+                try (ZipFile zip = new ZipFile(runtime)) {
+                    List<String> names = new ArrayList<>();
+                    Enumeration<? extends ZipEntry> entries = zip.entries();
+                    while (entries.hasMoreElements()) {
+                        String name = entries.nextElement().getName();
+                        if (!name.matches("classes([0-9]+)?\\.dex")) throw new IOException("Onverwacht runtime-bestand: " + name);
+                        names.add(name);
+                    }
+                    Collections.sort(names);
+                    for (String name : names) try (InputStream dex = zip.getInputStream(zip.getEntry(name))) { payloads.add(read(dex)); }
+                }
+            }
+        }
+        boolean attach = false;
+        Set<String> types = new HashSet<>();
+        for (byte[] bytes : payloads) {
+            DexBackedDexFile dex = new DexBackedDexFile(Opcodes.forApi(24), bytes);
+            for (ClassDef cls : dex.getClasses()) {
+                if (!cls.getType().startsWith("Lorg/example/spotifymixer/runtime/") || !types.add(cls.getType()))
+                    throw new IOException("Ongeldige of dubbele runtimeklasse: " + cls.getType());
+                if (cls.getType().equals("Lorg/example/spotifymixer/runtime/Mixer;")) {
+                    for (Method m : cls.getMethods()) {
+                        if (m.getName().equals("attach") && m.getReturnType().equals("V")
+                            && m.getParameterTypes().equals(Collections.singletonList("Landroid/app/Activity;"))
+                            && (m.getAccessFlags() & 9) == 9 && m.getImplementation() != null) attach = true;
+                    }
+                }
+            }
+        }
+        if (!attach) throw new IOException("Runtime mist Mixer.attach(Activity); bouwen afgebroken");
+        return payloads;
+    }
     public static void patch(File input, File runtime, File unsigned) throws Exception {
         validate(input);
+        List<byte[]> runtimeDex = validateRuntime(runtime);
         try (ZipFile zip = new ZipFile(input)) {
             byte[] patched;
             try (InputStream in = zip.getInputStream(zip.getEntry("classes2.dex"))) { patched = hook(read(in)); }
-            if (zip.getEntry("classes18.dex") != null) throw new IOException("Runtime DEX-slot al bezet");
+            for (int i = 0; i < runtimeDex.size(); i++)
+                if (zip.getEntry("classes" + (18+i) + ".dex") != null) throw new IOException("Runtime DEX-slot al bezet");
             try (CountOutput counter = new CountOutput(new FileOutputStream(unsigned)); ZipOutputStream out = new ZipOutputStream(counter)) {
                 Enumeration<? extends ZipEntry> entries = zip.entries();
                 byte[] buffer = new byte[65536];
@@ -91,7 +131,7 @@ public final class Patcher {
                     try (InputStream in = zip.getInputStream(old)) { int n; while ((n=in.read(buffer))!=-1) out.write(buffer,0,n); }
                     out.closeEntry();
                 }
-                try (InputStream in = new FileInputStream(runtime)) { put(out, "classes18.dex", read(in)); }
+                for (int i = 0; i < runtimeDex.size(); i++) put(out, "classes" + (18+i) + ".dex", runtimeDex.get(i));
             }
         } catch (Exception e) { unsigned.delete(); throw e; }
     }

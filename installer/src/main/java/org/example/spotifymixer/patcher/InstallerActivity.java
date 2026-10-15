@@ -56,13 +56,13 @@ public final class InstallerActivity extends Activity {
     }
     private void build(Uri uri) {
         File input = new File(getCacheDir(),"input.apk");
-        File runtime = new File(getCacheDir(),"mixer.dex");
+        File runtime = new File(getCacheDir(),"mixer-runtime.zip");
         File unsigned = new File(getCacheDir(),"unsigned.apk");
         try {
             if (getFilesDir().getUsableSpace() < 1024L*1024*1024) throw new IOException("Minimaal 1 GB vrije opslag nodig");
             update("APK kopiëren en controleren…");
             try (InputStream in = getContentResolver().openInputStream(uri)) { copy(in,input,300L*1024*1024); }
-            try (InputStream in = getAssets().open("mixer.dex")) { copy(in,runtime,16L*1024*1024); }
+            try (InputStream in = getAssets().open("mixer-runtime.zip")) { copy(in,runtime,16L*1024*1024); }
             update("Handtekening controleren, DEX injecteren en APK bouwen…");
             Patcher.patch(input,runtime,unsigned);
             update("APK ondertekenen en output controleren…");

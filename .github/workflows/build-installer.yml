@@ -31,6 +31,8 @@ jobs:
           test -d "$ANDROID_HOME/platforms/android-35" || "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platforms;android-35" "build-tools;35.0.0"
       - name: Build debug installer
         run: gradle :engine:test :installer:assembleDebug --no-daemon
+      - name: Check final installer runtime payload
+        run: python3 tools/check_installer_runtime.py installer/build/outputs/apk/debug/installer-debug.apk
       - uses: actions/upload-artifact@v4
         with:
           name: spotify-mixer-installer

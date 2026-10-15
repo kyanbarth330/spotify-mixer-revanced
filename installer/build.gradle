@@ -6,8 +6,8 @@ android {
         applicationId 'org.example.spotifymixer.patcher'
         minSdk 24
         targetSdk 28
-        versionCode 2
-        versionName '0.2'
+        versionCode 3
+        versionName '0.3'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -27,10 +27,26 @@ tasks.register('bundleMixerRuntime') {
     outputs.dir(runtimeAssets)
     doLast {
         def apk = project(':runtime').file('build/outputs/apk/debug/runtime-debug.apk')
-        def dex = zipTree(apk).matching { include 'classes.dex' }.singleFile
-        def out = runtimeAssets.get().file('mixer.dex').asFile
+        def out = runtimeAssets.get().file('mixer-runtime.zip').asFile
         out.parentFile.mkdirs()
-        out.bytes = dex.bytes
+        // Debug builds can put R in classes.dex and Mixer in classes2.dex.
+        // Preserve every DEX, including D8-generated lambda/anonymous classes.
+        new File(out.parentFile, 'mixer.dex').delete()
+        def source = new java.util.zip.ZipFile(apk)
+        try {
+            def names = source.entries().findAll { it.name ==~ /classes([0-9]+)?\.dex/ }.collect { it.name }.sort()
+            if (names.isEmpty()) throw new GradleException('Runtime APK contains no DEX')
+            out.withOutputStream { stream ->
+                def zip = new java.util.zip.ZipOutputStream(stream)
+                try {
+                    names.each { name ->
+                        zip.putNextEntry(new java.util.zip.ZipEntry(name))
+                        source.getInputStream(source.getEntry(name)).withCloseable { zip << it }
+                        zip.closeEntry()
+                    }
+                } finally { zip.close() }
+            }
+        } finally { source.close() }
     }
 }
 tasks.named('preBuild').configure { dependsOn 'bundleMixerRuntime' }

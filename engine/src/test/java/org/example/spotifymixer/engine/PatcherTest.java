@@ -36,4 +36,34 @@ public class PatcherTest {
         assertEquals("attach",((MethodReference)((ReferenceInstruction)call).getReference()).getName());
         assertEquals(Opcode.RETURN_VOID,ins.next().getOpcode()); assertFalse(ins.hasNext());
     }
+    private byte[] runtimeClass(String type, boolean helper) throws Exception {
+        List<Method> methods = new ArrayList<>();
+        if (helper) methods.add(new ImmutableMethod(type,"attach",Collections.singletonList(
+            new ImmutableMethodParameter("Landroid/app/Activity;",Collections.emptySet(),null)),"V",9,
+            Collections.emptySet(),Collections.emptySet(),new ImmutableMethodImplementation(1,
+                Collections.singletonList(new ImmutableInstruction10x(Opcode.RETURN_VOID)),Collections.emptyList(),Collections.emptyList())));
+        ClassDef cls = new ImmutableClassDef(type,1,"Ljava/lang/Object;",Collections.emptyList(),null,
+            Collections.emptySet(),Collections.emptyList(),methods);
+        MemoryDataStore store = new MemoryDataStore();
+        DexPool.writeTo(store,new ImmutableDexFile(Opcodes.forApi(24),Collections.singleton(cls)));
+        return store.getData();
+    }
+    @Test public void resourceOnlyRuntimeRejected() throws Exception {
+        File f = File.createTempFile("runtime", ".dex");
+        try {
+            try (OutputStream out = new FileOutputStream(f)) { out.write(runtimeClass("Lorg/example/spotifymixer/runtime/R;",false)); }
+            try { Patcher.validateRuntime(f); fail("accepted R-only runtime"); }
+            catch (IOException expected) { assertTrue(expected.getMessage().contains("Mixer.attach")); }
+        } finally { f.delete(); }
+    }
+    @Test public void helperInSecondDexIsRetained() throws Exception {
+        File f = File.createTempFile("runtime", ".zip");
+        try {
+            try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(new FileOutputStream(f))) {
+                out.putNextEntry(new java.util.zip.ZipEntry("classes.dex")); out.write(runtimeClass("Lorg/example/spotifymixer/runtime/R;",false)); out.closeEntry();
+                out.putNextEntry(new java.util.zip.ZipEntry("classes2.dex")); out.write(runtimeClass("Lorg/example/spotifymixer/runtime/Mixer;",true)); out.closeEntry();
+            }
+            assertEquals(2,Patcher.validateRuntime(f).size());
+        } finally { f.delete(); }
+    }
 }
