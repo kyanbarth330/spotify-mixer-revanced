@@ -1,6 +1,7 @@
 name: Build Android Mixer installer
 on:
   workflow_dispatch:
+  pull_request:
   push:
     paths:
       - 'installer/**'
