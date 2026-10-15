@@ -43,6 +43,12 @@ public final class InstallerActivity extends Activity {
     }
     protected void onActivityResult(int req, int result, Intent data) {
         super.onActivityResult(req,result,data);
+        if (req == 103) {
+            int code = data == null ? Integer.MIN_VALUE : data.getIntExtra(Intent.EXTRA_INSTALL_RESULT, Integer.MIN_VALUE);
+            update(result == RESULT_OK ? "Android meldt dat de installatie is voltooid. Open Spotify en controleer het Mixer-menu."
+                : "Installatie niet voltooid of geannuleerd. Android-resultaat: " + code + ". Bij een handtekeningconflict kan de originele installatie niet als update worden vervangen.");
+            return;
+        }
         if (req == 102) { if (getPackageManager().canRequestPackageInstalls()) launchInstall(); return; }
         if (req != 101 || result != RESULT_OK || data == null || data.getData() == null || busy) return;
         busy = true; select.setEnabled(false); install.setEnabled(false); signed.delete();

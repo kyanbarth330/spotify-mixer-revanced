@@ -9,6 +9,7 @@ on:
       - 'tools/**'
       - 'settings.gradle'
       - 'build.gradle'
+      - 'gradle.properties'
       - '.github/workflows/build-installer.yml'
 permissions:
   contents: read
