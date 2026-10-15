@@ -15,8 +15,10 @@ Measured locally on 2026-10-16 (Europe/Amsterdam), using the attached APK and JD
 | Output ZIP CRC and all DEX checksums | PASS |
 | Independent SDK apksigner verification | PASS; v2 verified |
 | zipalign `-c -P 16 -v 4` | PASS for unsigned and signed output |
-| AndroidKeyStore/FileProvider emulator smoke | Running in GitHub Actions; not yet confirmed |
+| AndroidKeyStore/FileProvider emulator smoke | PASS on Android 10/API 29 emulator; source-built fixture, same signer/FileProvider code |
 | Patched Spotify launch/menu/login/playback | NOT TESTED on an Android device |
+
+The final implementation build and Android 10 smoke test both passed in [Actions run 38825884697](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38825884697), testing commit `c0da752b4fa49d18fffd220049963ffeb357d665`. CI ran the two source-only JVM tests and skipped the proprietary-input test; the local run executed all three. The downloadable installer itself also passed independent SDK apksigner v2 verification and contains only `assets/mixer.dex`, with no nested Spotify APK.
 
 These checks demonstrate a structurally patched and correctly signed APK. They do not prove Spotify launches or accepts the new signer.
 
