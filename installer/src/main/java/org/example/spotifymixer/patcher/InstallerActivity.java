@@ -10,6 +10,8 @@ import android.graphics.Color;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.SeekBar;
+import android.app.AlertDialog;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -52,6 +54,10 @@ public class InstallerActivity extends Activity {
             startActivityForResult(picker, REQUEST_APK);
         });
         root.addView(selectButton);
+        Button preview = new Button(this);
+        preview.setText("Bekijk Spotify Mixer UI");
+        preview.setOnClickListener(v -> showMixerPreview());
+        root.addView(preview);
         Button patch = new Button(this);
         patch.setText("2. Patch Spotify UI (in ontwikkeling)");
         patch.setEnabled(false);
@@ -70,6 +76,46 @@ public class InstallerActivity extends Activity {
         selectButton.setEnabled(false);
         status.setText("APK wordt gecontroleerd...");
         new Thread(() -> inspect(uri)).start();
+    }
+
+    private void showMixerPreview() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 24, 32, 8);
+        TextView ratio = new TextView(this);
+        ratio.setText("Playlist A: 70% · Playlist B: 30%");
+        Button a = new Button(this);
+        a.setText("Selecteer Playlist A");
+        a.setOnClickListener(v -> new AlertDialog.Builder(this)
+            .setMessage("Playlistselectie is nog niet beschikbaar.")
+            .setPositiveButton("OK", null).show());
+        Button b = new Button(this);
+        b.setText("Selecteer Playlist B");
+        b.setOnClickListener(v -> new AlertDialog.Builder(this)
+            .setMessage("Playlistselectie is nog niet beschikbaar.")
+            .setPositiveButton("OK", null).show());
+        SeekBar slider = new SeekBar(this);
+        slider.setMax(100);
+        slider.setProgress(70);
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                ratio.setText("Playlist A: " + progress + "% · Playlist B: " + (100-progress) + "%");
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+        Button start = new Button(this);
+        start.setText("Start Mixer");
+        start.setOnClickListener(v -> new AlertDialog.Builder(this)
+            .setMessage("Dit is een UI-voorbeeld. Spotify wordt nog niet aangepast.")
+            .setPositiveButton("OK", null).show());
+        layout.addView(a);
+        layout.addView(b);
+        layout.addView(ratio);
+        layout.addView(slider);
+        layout.addView(start);
+        new AlertDialog.Builder(this).setTitle("Spotify Mixer — UI-voorbeeld")
+            .setView(layout).setPositiveButton("Sluiten", null).show();
     }
 
     private void inspect(Uri uri) {
