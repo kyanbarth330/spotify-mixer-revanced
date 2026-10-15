@@ -1,57 +1,29 @@
-# Spotify 9.1.90.2270 — UI-only reverse engineering
+# Spotify 9.1.90.2270 investigation
 
-## Verified from supplied APK
-- 4,874 ZIP entries; 17 DEX files.
-- Binary AndroidManifest.xml exists.
-- res/layout/settings_page.xml exists (compiled XML).
-- This does not prove it is responsible for the visible Settings screen.
+## Supplied artifact
 
-## Unresolved
-- Identify the real Settings entry-point and list rendering mechanism.
-- Identify a stable insertion point for a new Spotify Mixer row.
-- Integrate and register a UI Activity or equivalent screen.
-- Patch, sign, and run-test the APK.
+SHA-256: `5c05366de31788fd0eec6e046c3610311acf5e63c15345e5bdaca6e8f09fb3b4`.
 
-## Scope
-UI only: Playlist A/B placeholder buttons, 0–100% slider, Start Mixer placeholder. No queue changes, API calls or playback control.
+142,124,037 bytes; 4,874 ZIP entries; no duplicate names or failing ZIP CRCs. All 17 DEX files have valid SHA-1 and Adler-32 headers. Their class tables contain 102,449 definitions; their method tables contain 701,029 entries (including references, not 701,029 declared methods). There are 40 compressed native libraries across arm64-v8a, armeabi-v7a, x86 and x86_64. See `APK_INVENTORY.json` for metadata.
 
-## Local analysis
-`python3 tools/inspect_apk.py path/to/spotify.apk`
+Parsed manifest attributes: package `com.spotify.music`, version `9.1.90.2270`, code `147078674`, minimum SDK 24, target/compile SDK 37. `com.spotify.music.MainActivity` is a launcher alias targeting `com.spotify.music.SpotifyMainActivity`; the application class is `com.spotify.music.SpotifyApplication`.
 
-Do not upload the Spotify APK or decompiled proprietary sources to this public repository.
+## Implemented hook
 
-## Additional binary inspection (2026-10-16)
+The exact `Lcom/spotify/music/SpotifyMainActivity;` definition is in `classes2.dex`. The patch engine finds its actual declared `onResume()V` implementation, requires exactly one match, preserves its register count, and inserts one static range call at entry using `registerCount - 1` as `this`.
 
-The user-supplied 9.1.90.2270 APK was inspected locally, without publishing its bytes. Plain ASCII scans found:
+An original helper added in `classes18.dex` posts UI attachment to the main window. No new manifest component or resource IDs are necessary. The dialog stores two playlist text fields and a ratio. No login, payment, advertisements, DRM, playback or queue code is changed.
 
-- `SettingsPage` in `classes.dex` and `classes2.dex`.
-- `settings_page` in `classes2.dex`.
-- `SettingsActivity` in `classes3.dex`.
+## Settings investigation
 
-These are **search leads, not verified classes/hooks**. DEX binary offsets are not a patch mechanism. The compiled settings layout may not control the live settings navigation. No decompilation, injection, signing or on-device install pipeline has been validated.
+The APK contains `res/layout/settings_page.xml` and settings-related class names. Neither resource presence nor a matching string establishes the live Settings list hook. This implementation deliberately uses the verified main-activity lifecycle method. A native Spotify Settings-row patch remains unimplemented.
 
-The installer now verifies the selected APK package name `com.spotify.music`, exact version `9.1.90.2270`, DEX/manifest presence, and computes SHA-256. It intentionally disables patch/install until a working patch exists.
+## Corrections to previous research tools
 
-## Confirmed class definitions from all 17 DEX files
+The old `dex_settings_classes.py` compared against a literal backslash-n rather than the DEX newline magic. The old search regex also overescaped the DEX extension. XML variable-length parsers returned incorrect offsets for short strings; UTF-8 long lengths used a 7-bit rather than 8-bit shift. Those errors are fixed. Earlier name/string observations alone must not be treated as evidence of executable hooks.
 
-A local parser traversed the DEX type/class tables (not merely ASCII searches) in the supplied 9.1.90.2270 APK. The following are **actual defined classes**:
+## Boundaries of the investigation
 
-- `classes2.dex`: `Lcom/spotify/settings/settings/SettingsDelegate;`
-- `classes2.dex`: `Lcom/spotify/settings/settingsimpl/NativeSettings;`
-- `classes6.dex`: `Lcom/spotify/encoreconsumermobile/elements/settings/SettingsButton;`
-- `classes7.dex`: `Lcom/spotify/localfiles/settings/localfiles/impl/LocalFilesLibrarySettingsItemFactoryImpl;`
-- `classes8.dex`: `Lcom/spotify/localfiles/settings/localfiles/api/LocalFilesLibrarySettingsItemFactory;`
-- `classes8.dex`: `Lcom/spotify/localfiles/settings/localfiles/impl/LocalFilesSettingsItemModule;`
+This is a complete ZIP/DEX structural inventory and a focused injection investigation, **not** a semantic audit of every one of the 102,449 classes or Spotify's native code. Static patch/sign tests do not establish that Spotify starts, authentication works, UI is unobstructed, or playback survives its changed certificate. Device results are tracked separately in `VALIDATION.md`.
 
-These names are confirmed DEX class descriptors, not guessed. They narrow the investigation to the settings item factory/navigation implementation. A settings page RecyclerView is separately confirmed in the binary layout. **No injection target or tested patch is yet established.**
-
-## DEX method-table inspection
-
-Read-only method-table parsing of the supplied APK confirms:
-
-- `Lcom/spotify/settings/settings/SettingsDelegate;` declares `onIncognitoModeDisabledByTimer`.
-- `Lcom/spotify/settings/settingsimpl/NativeSettings;` declares `create`, `destroy`, `enterAuthenticatedScope`, `exitAuthenticatedScope`, and `setDelegate`.
-- `Lcom/spotify/encoreconsumermobile/elements/settings/SettingsButton;` declares constructors and obfuscated methods `d`, `m`.
-- `Lcom/spotify/localfiles/settings/localfiles/impl/LocalFilesLibrarySettingsItemFactoryImpl;` declares `create` methods.
-
-This establishes that the named settings classes are not yet a proven global settings list injection point. `LocalFilesLibrarySettingsItemFactoryImpl` appears specific to local-files settings. A full call-graph/decompilation of the obfuscated settings screen is still required before producing a real patch.
+All proprietary analysis and patched Spotify outputs stay local. Repository/CI contain original project sources and metadata only.

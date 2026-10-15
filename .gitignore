@@ -6,3 +6,4 @@ local.properties
 *.keystore
 *.pk8
 __pycache__/
+*.p12
