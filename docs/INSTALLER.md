@@ -1,6 +1,6 @@
 # Installer architecture
 
-`installer` is the sole user-facing APK. `payload` is a build-only Android module: its debug APK is opened by Gradle and only its `classes.dex` is embedded as `assets/mixer.dex`. Do not distribute the payload APK as a second application.
+`installer` is the sole user-facing APK. `payload` is a build-only Android module: its unsigned release APK is opened by Gradle and only its `classes.dex` is embedded as `assets/mixer.dex`. Do not distribute the payload APK as a second application.
 
 The installer has no network permission. Android's document picker supplies a user-selected URI; a background worker copies at most 300 MB into private cache. Package/version inspection and an exact SHA-256 gate precede patching. No external tool downloads are needed on the phone.
 

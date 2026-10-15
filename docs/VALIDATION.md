@@ -1,6 +1,33 @@
 # Validation status
 
-Work in progress: this file is updated with actual build and round-trip results before delivery. Do not interpret implemented code as proof of on-device behavior.
+Measured locally on 2026-10-16 (Europe/Amsterdam), using the attached APK and JDK 17 / Gradle 8.10.2 / Android build-tools 35.0.0:
+
+| Check | Result |
+| --- | --- |
+| Installer and payload build | PASS (`:installer:assembleDebug`) |
+| JVM unit/integration tests | PASS: 3 tests, 0 failed, 0 skipped |
+| Wrong-input rejection | PASS |
+| Bundled payload contains `MixerMenu.attach(Activity)` | PASS; 6,228-byte DEX matches generated asset |
+| Real supplied APK patch/sign round trip | PASS; exactly 1 injected call, 18 output DEX files |
+| classes2.dex method IDs | 65,532 → 65,533 |
+| Original ZIP content SHA-256 comparison | 4,872 entries byte-identical; only classes2.dex changed; source-stamp marker removed |
+| Binary manifest comparison | PASS; byte-identical |
+| Output ZIP CRC and all DEX checksums | PASS |
+| Independent SDK apksigner verification | PASS; v2 verified |
+| zipalign `-c -P 16 -v 4` | PASS for unsigned and signed output |
+| AndroidKeyStore/FileProvider emulator smoke | Running in GitHub Actions; not yet confirmed |
+| Patched Spotify launch/menu/login/playback | NOT TESTED on an Android device |
+
+These checks demonstrate a structurally patched and correctly signed APK. They do not prove Spotify launches or accepts the new signer.
+
+The local installer is 3,910,881 bytes with SHA-256 `1459130edbcf775fb46aa063f507e162fea72e170c65603b74626e09d2615ee6`. Debug/CI builds can differ because signing keys and build metadata differ.
+
+## Failures found and repaired
+
+- Missing Guava compile dependency required by dexlib2 immutable API overloads: added an explicit Android Guava dependency.
+- Debug payload had `R` in classes.dex and the actual menu in classes2.dex: switched to an unsigned release payload, required exactly one DEX during packaging, and added a CI test for the actual bundled menu entry point.
+- The inherited DEX parser checked literal `dex\\n`: repaired DEX magic handling and clarified that its method table reports references, not declared implementations.
+- Local tooling had an incomplete JDK and unavailable default temporary directory/proxy configuration: supplied a full JDK and isolated build configuration. These are environment repairs, not runtime success evidence.
 
 ## Reproduce
 
@@ -14,7 +41,7 @@ For an authorized local copy of the exact input, generate a disposable test-only
 
 ```sh
 keytool -genkeypair -alias test -keyalg RSA -keysize 2048 -dname 'CN=Local Test Only' -validity 365 -storetype PKCS12 -keystore /private/test.p12 -storepass test-only -keypass test-only
-MIXER_TEST_APK=/private/input.apk MIXER_TEST_OUTPUT=/private/patch-test MIXER_TEST_KEYSTORE=/private/test.p12 gradle :payload:assembleDebug :installer:testDebugUnitTest --rerun-tasks
+MIXER_TEST_APK=/private/input.apk MIXER_TEST_OUTPUT=/private/patch-test MIXER_TEST_KEYSTORE=/private/test.p12 gradle :payload:assembleRelease :installer:testDebugUnitTest --rerun-tasks
 ```
 
 The integration test rewrites the actual input, reopens the output, checks the injected method reference, verifies the manifest is byte-identical and checks unchanged entry CRCs. It then signs with the disposable key and requires successful v2 verification. Output Spotify APKs stay local; do not upload them as artifacts.

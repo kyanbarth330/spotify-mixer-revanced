@@ -29,11 +29,12 @@ dependencies {
 def payloadAssets = layout.buildDirectory.dir('generated/payloadAssets')
 android.sourceSets.main.assets.srcDir(payloadAssets)
 tasks.register('preparePayload') {
-    dependsOn ':payload:assembleDebug'
-    inputs.file(project(':payload').layout.buildDirectory.file('outputs/apk/debug/payload-debug.apk'))
+    dependsOn ':payload:assembleRelease'
+    inputs.file(project(':payload').layout.buildDirectory.file('outputs/apk/release/payload-release-unsigned.apk'))
     outputs.dir(payloadAssets)
     doLast {
-        def apk = project(':payload').layout.buildDirectory.file('outputs/apk/debug/payload-debug.apk').get().asFile
+        def apk = project(':payload').layout.buildDirectory.file('outputs/apk/release/payload-release-unsigned.apk').get().asFile
+        if (zipTree(apk).matching { include 'classes*.dex' }.files.size() != 1) throw new GradleException('Payload must contain exactly one DEX')
         copy { from zipTree(apk); include 'classes.dex'; into payloadAssets; rename 'classes.dex', 'mixer.dex' }
     }
 }
@@ -41,13 +42,14 @@ tasks.named('preBuild').configure { dependsOn 'preparePayload' }
 
 android.sourceSets.androidTest.assets.srcDir(layout.buildDirectory.dir('generated/smokeAssets'))
 tasks.register('prepareSmokeFixture') {
-    dependsOn ':payload:assembleDebug'
+    dependsOn ':payload:assembleRelease'
+    inputs.file(project(':payload').layout.buildDirectory.file('outputs/apk/release/payload-release-unsigned.apk'))
     outputs.dir(layout.buildDirectory.dir('generated/smokeAssets'))
     doLast {
         copy {
-            from project(':payload').layout.buildDirectory.file('outputs/apk/debug/payload-debug.apk')
+            from project(':payload').layout.buildDirectory.file('outputs/apk/release/payload-release-unsigned.apk')
             into layout.buildDirectory.dir('generated/smokeAssets')
-            rename 'payload-debug.apk', 'fixture.apk'
+            rename 'payload-release-unsigned.apk', 'fixture.apk'
         }
     }
 }

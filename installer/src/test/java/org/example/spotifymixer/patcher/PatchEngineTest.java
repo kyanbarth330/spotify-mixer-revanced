@@ -20,11 +20,19 @@ public class PatchEngineTest {
         catch(IOException expected){assertTrue(expected.getMessage().contains("SHA-256"));assertFalse(out.exists());}
         finally{input.delete();out.delete();}
     }
+    @Test public void bundledPayloadContainsMenu() throws Exception {
+        byte[] payload=java.nio.file.Files.readAllBytes(new File("build/generated/payloadAssets/mixer.dex").toPath());
+        DexBackedDexFile dex=new DexBackedDexFile(Opcodes.forApi(24),payload);
+        boolean found=false;
+        for(ClassDef c:dex.getClasses())if(c.getType().equals(PatchEngine.PAYLOAD)) {
+            for(Method m:c.getMethods())if(m.getName().equals("attach") && m.getParameterTypes().toString().equals("[Landroid/app/Activity;]"))found=true;
+        }
+        assertTrue("Bundled DEX must define MixerMenu.attach(Activity)",found);
+    }
     @Test public void realApkRoundTrip() throws Exception {
         String source=System.getenv("MIXER_TEST_APK");Assume.assumeNotNull(source);
         File input=new File(source);
-        File payloadApk=new File("../payload/build/outputs/apk/debug/payload-debug.apk");
-        byte[] payload;try(ZipFile z=new ZipFile(payloadApk)){payload=PatchEngine.read(z.getInputStream(z.getEntry("classes.dex")));}
+        byte[] payload=java.nio.file.Files.readAllBytes(new File("build/generated/payloadAssets/mixer.dex").toPath());
         File dir=new File(System.getenv("MIXER_TEST_OUTPUT"));dir.mkdirs();
         File unsigned=new File(dir,"unsigned.apk"),signed=new File(dir,"signed.apk");
         PatchEngine.patch(input,payload,unsigned);
