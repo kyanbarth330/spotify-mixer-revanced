@@ -13,3 +13,7 @@ GitHub Actions workflow `android-smoke.yml` boots an Android 35 x86_64 emulator 
 The workflow stores screenshots, instrumentation reports and logcat from this **own-code fixture only**. It never uploads original/patched Spotify APKs or private keys. The test key and signed fixture copy are deleted by the test.
 
 These tests do not establish that Spotify's native playlist menu has been patched, that its actual navigation supplies these fields in every case, that login works, or that playback/queue mixing works. Actual Spotify results must still be checked against the supplied APK on an authorized device. The local environment has no `/dev/kvm`; a fast local hardware-accelerated emulator is unavailable, so the runner provides the virtual device.
+
+## First run
+
+The first Android 35 run is [38831245397](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38831245397). At the initial handoff it was still running; the installer build for the same source completed successfully. Do not mark smoke tests passed without checking the completed run and instrumentation report. The scheduled background continuation must inspect this run, repair failures and record results/screenshots here.
