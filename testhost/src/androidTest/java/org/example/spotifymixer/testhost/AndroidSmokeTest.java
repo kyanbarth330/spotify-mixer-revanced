@@ -29,7 +29,17 @@ public class AndroidSmokeTest {
         }
         assertNotNull("Missing UI: "+text,view);return view;
     }
-    private void screenshot(String name){device.waitForIdle();File dir=context.getExternalFilesDir("screenshots");assertNotNull(dir);dir.mkdirs();assertTrue(device.takeScreenshot(new File(dir,name+".png")));}
+    private void screenshot(String name){
+        device.waitForIdle();
+        try{
+            // Gradle uninstalls the fixture after tests, deleting app-scoped external files.
+            // Shell-owned evidence survives that cleanup on this fresh, own-code-only emulator.
+            String path="/sdcard/Download/spotenhancer-evidence/"+name+".png";
+            String result=device.executeShellCommand("mkdir -p /sdcard/Download/spotenhancer-evidence && screencap -p "+path+" && test -s "+path+" && echo SAVED");
+            assertEquals("SAVED",result.trim());
+        }catch(java.io.IOException ex){throw new AssertionError("Cannot preserve screenshot",ex);}
+    }
+
     @Test public void selectTwoPlaylistsAndNavigateBack()throws Exception{
         context.getSharedPreferences(PREFS,0).edit().clear().commit();
         context.startActivity(new Intent(context,FixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
