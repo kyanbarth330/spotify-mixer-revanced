@@ -25,11 +25,16 @@ public class AndroidSmokeTest {
         long deadline=android.os.SystemClock.uptimeMillis()+10000;
         do{try{
             device.waitForIdle();UiObject2 view=device.wait(Until.findObject(By.text(text)),1000);
-            if(view==null||view.getVisibleBounds().isEmpty()){try{new UiScrollable(new UiSelector().className("android.widget.ScrollView")).scrollTextIntoView(text);}catch(UiObjectNotFoundException ignored){}view=device.wait(Until.findObject(By.text(text)),1000);}
+            if(view==null||view.getVisibleBounds().isEmpty()){try{if(device.hasObject(By.clazz("android.widget.ScrollView")))new UiScrollable(new UiSelector().className("android.widget.ScrollView")).scrollTextIntoView(text);}catch(UiObjectNotFoundException ignored){}view=device.wait(Until.findObject(By.text(text)),1000);}
             if(view!=null&&!view.getVisibleBounds().isEmpty())return view;
         }catch(StaleObjectException ignored){/* Activity transition: resolve the locator again. */}}
         while(android.os.SystemClock.uptimeMillis()<deadline);
-        throw new AssertionError("Missing UI: "+text);
+        screenshot("failure-missing-"+text.replaceAll("[^A-Za-z0-9]","-"));throw new AssertionError("Missing UI: "+text);
+    }
+    private void awaitSetting(android.content.SharedPreferences prefs,String key,Object expected){
+        long deadline=android.os.SystemClock.uptimeMillis()+5000;
+        do{if(java.util.Objects.equals(expected,prefs.getAll().get(key)))return;android.os.SystemClock.sleep(50);}while(android.os.SystemClock.uptimeMillis()<deadline);
+        assertEquals("Saved preference "+key,expected,prefs.getAll().get(key));
     }
     private UiObject2 field(String description)throws Exception{new UiScrollable(new UiSelector().className("android.widget.ScrollView")).scrollIntoView(new UiSelector().description(description));UiObject2 input=device.wait(Until.findObject(By.desc(description)),4000);assertNotNull(description,input);return input;}
     private void screenshot(String name){
@@ -110,8 +115,8 @@ public class AndroidSmokeTest {
         android.media.AudioTrack track=null;
         try{
             waitText("Test library");tools().click();waitText("Equalizer").click();assertFalse(waitText("Enable equalizer").isChecked());
-            UiObject2 spinner=device.wait(Until.findObject(By.desc("Equalizer preset")),4000);assertNotNull(spinner);spinner.click();waitText("Bass Boost").click();waitText("Apply preset").click();assertEquals(1,prefs.getInt("eq_preset",-1));
-            waitText("Enable equalizer").click();assertTrue(prefs.getBoolean("eq_enabled",false));
+            UiObject2 spinner=device.wait(Until.findObject(By.desc("Equalizer preset")),4000);assertNotNull(spinner);spinner.click();waitText("Bass Boost").click();waitText("Apply preset").click();awaitSetting(prefs,"eq_preset",1);assertEquals(1,prefs.getInt("eq_preset",-1));
+            waitText("Enable equalizer").click();awaitSetting(prefs,"eq_enabled",true);assertTrue(prefs.getBoolean("eq_enabled",false));
             int buffer=android.media.AudioTrack.getMinBufferSize(48000,android.media.AudioFormat.CHANNEL_OUT_MONO,android.media.AudioFormat.ENCODING_PCM_16BIT);
             track=new android.media.AudioTrack.Builder().setAudioAttributes(new android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_MEDIA).setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC).build()).setAudioFormat(new android.media.AudioFormat.Builder().setSampleRate(48000).setChannelMask(android.media.AudioFormat.CHANNEL_OUT_MONO).setEncoding(android.media.AudioFormat.ENCODING_PCM_16BIT).build()).setBufferSizeInBytes(Math.max(4096,buffer)).setTransferMode(android.media.AudioTrack.MODE_STREAM).build();
             final int id=track.getAudioSessionId();assertTrue(id>0);
@@ -119,15 +124,15 @@ public class AndroidSmokeTest {
             assertTrue(org.example.spotifymixer.runtime.EqualizerRuntime.status(),org.example.spotifymixer.runtime.EqualizerRuntime.status().startsWith("Active on local audio session"));
             assertNotNull(org.example.spotifymixer.runtime.EqualizerRuntime.device());
             waitText("Refresh connection").click();waitText("Frequency bands");screenshot("15-equalizer-own-audio-session");
-            UiObject2 band=device.findObject(By.clazz("android.widget.SeekBar"));assertNotNull(band);Rect bounds=band.getVisibleBounds();device.click(bounds.left+bounds.width()*3/4,bounds.centerY());device.waitForIdle();assertEquals(5,prefs.getInt("eq_preset",-1));assertTrue(prefs.getAll().keySet().stream().anyMatch(k->k.startsWith("eq_hz_")));
-            waitText("Reset to Flat").click();assertEquals(0,prefs.getInt("eq_preset",-1));
-            waitText("Enable equalizer").click();assertFalse(prefs.getBoolean("eq_enabled",true));assertNull(org.example.spotifymixer.runtime.EqualizerRuntime.device());
+            UiObject2 band=device.findObject(By.clazz("android.widget.SeekBar"));assertNotNull(band);Rect bounds=band.getVisibleBounds();device.click(bounds.left+bounds.width()*3/4,bounds.centerY());InstrumentationRegistry.getInstrumentation().waitForIdleSync();device.waitForIdle();awaitSetting(prefs,"eq_preset",5);assertEquals(5,prefs.getInt("eq_preset",-1));assertTrue(prefs.getAll().keySet().stream().anyMatch(k->k.startsWith("eq_hz_")));
+            waitText("Reset to Flat").click();InstrumentationRegistry.getInstrumentation().waitForIdleSync();device.waitForIdle();awaitSetting(prefs,"eq_preset",0);assertEquals(0,prefs.getInt("eq_preset",-1));
+            waitText("Enable equalizer").click();InstrumentationRegistry.getInstrumentation().waitForIdleSync();device.waitForIdle();awaitSetting(prefs,"eq_enabled",false);assertFalse(prefs.getBoolean("eq_enabled",true));assertNull(org.example.spotifymixer.runtime.EqualizerRuntime.device());
             com.spotify.playbacknative.AudioRenderer.destroyed(id);InstrumentationRegistry.getInstrumentation().waitForIdleSync();
         }finally{prefs.edit().putBoolean("eq_enabled",false).commit();org.example.spotifymixer.runtime.EqualizerRuntime.refresh();if(track!=null)track.release();device.pressHome();}
     }
     @Test public void themeStudioSavesPresetAndRestoresDefaults()throws Exception{
         android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);prefs.edit().clear().commit();context.startActivity(new Intent(context,FixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
-        try{waitText("Test library");tools().click();waitText("Theme Studio").click();assertFalse(waitText("Enable themes").isChecked());assertFalse(waitText("Apply theme").isEnabled());waitText("Enable themes").click();UiObject2 spinner=device.wait(Until.findObject(By.desc("Theme preset")),4000);assertNotNull(spinner);spinner.click();waitText("Midnight Ocean").click();waitText("Apply theme").click();assertTrue(prefs.getBoolean("theme_enabled",false));assertEquals("ocean",prefs.getString("theme_preset",""));waitText("Give Spotify a new mood");android.os.SystemClock.sleep(2500);screenshot("13-theme-studio-ocean");
+        try{assertTrue(device.wait(Until.hasObject(By.text("Test library")),15000));device.waitForIdle();waitText("Test library");tools().click();waitText("Theme Studio").click();assertFalse(waitText("Enable themes").isChecked());assertFalse(waitText("Apply theme").isEnabled());waitText("Enable themes").click();UiObject2 spinner=device.wait(Until.findObject(By.desc("Theme preset")),4000);assertNotNull(spinner);spinner.click();waitText("Midnight Ocean").click();waitText("Apply theme").click();assertTrue(prefs.getBoolean("theme_enabled",false));assertEquals("ocean",prefs.getString("theme_preset",""));waitText("Give Spotify a new mood");android.os.SystemClock.sleep(2500);screenshot("13-theme-studio-ocean");
             waitText("‹  Back to Spotify").click();waitText("Test library");screenshot("14-themed-native-view-fixture");tools().click();waitText("Theme Studio").click();waitText("Restore Spotify defaults").click();assertFalse(prefs.getBoolean("theme_enabled",true));assertFalse(waitText("Enable themes").isChecked());
         }finally{prefs.edit().remove("theme_enabled").remove("theme_preset").commit();org.example.spotifymixer.runtime.ThemeRuntime.refresh(context);device.pressHome();}
     }
