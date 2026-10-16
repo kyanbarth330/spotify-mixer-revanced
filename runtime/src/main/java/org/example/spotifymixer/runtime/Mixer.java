@@ -14,7 +14,7 @@ import java.util.*;
 public final class Mixer {
     static final String PREFS="spotify-mixer-entry-v1";
     private static final String ROW="spotenhancer-navigation";
-    private static final WeakHashMap<View,String[]> contexts=new WeakHashMap<>();
+    private static final WeakHashMap<View,java.lang.ref.WeakReference<Object>> contexts=new WeakHashMap<>();
     public static void attach(Activity activity) {
         activity.getWindow().getDecorView().post(() -> {
             try {
@@ -54,9 +54,11 @@ public final class Mixer {
     }
     private static String[] currentPlaylist(){
         String[] selected=null;
-        for(Map.Entry<View,String[]> entry:new ArrayList<>(contexts.entrySet())){
-            View root=entry.getKey();if(root==null || !root.isAttachedToWindow() || !root.isShown())continue;
-            String[] value=entry.getValue();
+        for(Map.Entry<View,java.lang.ref.WeakReference<Object>> entry:new ArrayList<>(contexts.entrySet())){
+            View root=entry.getKey();if(root==null || !root.isAttachedToWindow() || !root.isShown() || !root.getGlobalVisibleRect(new android.graphics.Rect()))continue;
+            Object fragment=entry.getValue().get();if(fragment==null)continue;
+            String[] value;
+            try{Field args=Class.forName("p.gs10",false,fragment.getClass().getClassLoader()).getDeclaredField("f");args.setAccessible(true);Bundle bundle=(Bundle)args.get(fragment);if(bundle==null)continue;String uri=PlaylistUri.fromBundle(bundle);if(uri==null)continue;String title=PlaylistTitle.from(bundle,root);value=new String[]{uri,title==null?"Selected playlist":title};}catch(ReflectiveOperationException|RuntimeException error){continue;}
             if("Selected playlist".equals(value[1])){String title=PlaylistTitle.visibleHeading(root);if(title!=null)value[1]=title;}
             if(selected!=null && !selected[0].equals(value[0]))return null;
             selected=value;
@@ -80,7 +82,7 @@ public final class Mixer {
             }
             String title=PlaylistTitle.from(bundle,root);
             if(title==null)title="Selected playlist";
-            contexts.put(root,new String[]{uri,title});Diagnostics.event("Playlist context captured");
+            contexts.put(root,new java.lang.ref.WeakReference<>(fragment));Diagnostics.event("Playlist context captured");
         }catch(ReflectiveOperationException | RuntimeException | LinkageError error){Diagnostics.event("Hook error: "+error.getClass().getSimpleName());Log.w("SpotEnhancer","Playlist context unavailable",error);}
     }
     static void launch(Activity a,String uri,String title){Intent intent=new Intent().setClassName(a.getPackageName(),SpotEnhancerActivity.class.getName()).putExtra("from_spotify",true);if(uri!=null)intent.putExtra("playlist",uri).putExtra("title",title);a.startActivity(intent);}

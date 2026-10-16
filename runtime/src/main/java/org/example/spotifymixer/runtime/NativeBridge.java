@@ -57,7 +57,7 @@ public final class NativeBridge implements MixSession.Backend {
         }
         return new MixSession.Playlist(title,tracks);
     }
-    public void play(List<String> tracks)throws Exception{
+    public void play(List<String> tracks,boolean shuffle)throws Exception{
         Object service=player;if(service==null)throw new IOException("Play a track in Spotify first");if(tracks.isEmpty())throw new IOException("The mix is empty");
         ClassLoader loader=service.getClass().getClassLoader();Class<?> list=type(loader,"p.l960"),ctx=type(loader,"com.spotify.player.model.Context"),origin=type(loader,"com.spotify.player.model.PlayOrigin"),command=type(loader,"com.spotify.player.model.command.PlayCommand");
         Object uris=invoke(list.getMethod("p",Collection.class),null,tracks);
@@ -65,7 +65,7 @@ public final class NativeBridge implements MixSession.Backend {
         Object source=invoke(origin.getMethod("create",String.class),null,"spotenhancer");
         Class<?> overrides=type(loader,"com.spotify.player.model.command.options.PlayerOptionOverrides"),ob=type(loader,"com.spotify.player.model.command.options.PlayerOptionOverrides$Builder"),prepare=type(loader,"com.spotify.player.model.command.options.PreparePlayOptions"),pb=type(loader,"com.spotify.player.model.command.options.PreparePlayOptions$Builder"),cb=type(loader,"com.spotify.player.model.command.PlayCommand$Builder");
         Object overrideBuilder=invoke(overrides.getMethod("builder"),null);
-        invoke(ob.getMethod("shufflingContext",Boolean.class),overrideBuilder,Boolean.FALSE);
+        invoke(ob.getMethod("shufflingContext",Boolean.class),overrideBuilder,Boolean.valueOf(shuffle));
         invoke(ob.getMethod("repeatingContext",Boolean.class),overrideBuilder,Boolean.FALSE);
         invoke(ob.getMethod("repeatingTrack",Boolean.class),overrideBuilder,Boolean.FALSE);
         Object optionsBuilder=invoke(prepare.getMethod("builder"),null);

@@ -10,7 +10,7 @@ import android.widget.*;
 
 /** Resource-independent styling: the same original UI is also injected as DEX. */
 public final class EnhancerTheme {
-    public static final int BACKGROUND=0xff121212, SURFACE=0xff242424, GREEN=0xff1ed760, MUTED=0xffb3b3b3;
+    public static final int BACKGROUND=0xff0c0f0d, SURFACE=0xff1b211d, GREEN=0xff1ed760, MUTED=0xffb3b3b3;
     private EnhancerTheme(){}
     public static int dp(Context c,int value){return Math.round(value*c.getResources().getDisplayMetrics().density);}
     public static void window(Activity a){a.getWindow().setStatusBarColor(BACKGROUND);a.getWindow().setNavigationBarColor(BACKGROUND);a.getWindow().getDecorView().setSystemUiVisibility(0);}
@@ -25,10 +25,15 @@ public final class EnhancerTheme {
         b.setBackground(new RippleDrawable(ColorStateList.valueOf(0x33ffffff),states,null));
     }
     public static Button button(LinearLayout box,String label,boolean primary,Runnable action){Button b=new Button(box.getContext());b.setText(label);styleButton(b,primary);b.setOnClickListener(v->action.run());LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(box.getContext(),8);lp.bottomMargin=dp(box.getContext(),8);box.addView(b,lp);return b;}
-    public static LinearLayout card(LinearLayout parent){Context c=parent.getContext();LinearLayout card=new LinearLayout(c);card.setOrientation(1);card.setPadding(dp(c,16),dp(c,12),dp(c,16),dp(c,12));card.setBackground(surface(SURFACE,16,c));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(c,10);lp.bottomMargin=dp(c,10);parent.addView(card,lp);return card;}
+    public static LinearLayout card(LinearLayout parent){Context c=parent.getContext();LinearLayout card=new LinearLayout(c);card.setOrientation(1);card.setPadding(dp(c,16),dp(c,12),dp(c,16),dp(c,12));card.setBackground(surface(SURFACE,22,c));LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.topMargin=dp(c,10);lp.bottomMargin=dp(c,10);parent.addView(card,lp);return card;}
     public static LinearLayout page(Activity a,String heading){
-        window(a);ScrollView scroll=new ScrollView(a);scroll.setBackgroundColor(BACKGROUND);scroll.setFillViewport(true);LinearLayout box=new LinearLayout(a);box.setOrientation(1);int gap=dp(a,20);box.setPadding(gap,gap,gap,gap);
-        box.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(gap+insets.getSystemWindowInsetLeft(),gap+insets.getSystemWindowInsetTop(),gap+insets.getSystemWindowInsetRight(),gap+insets.getSystemWindowInsetBottom());return insets;});
-        scroll.addView(box,new ScrollView.LayoutParams(-1,-2));a.setContentView(scroll);box.requestApplyInsets();text(box,heading,32,true);return box;
+        window(a);
+        LinearLayout shell=new LinearLayout(a);shell.setOrientation(1);shell.setBackgroundColor(BACKGROUND);
+        int gap=dp(a,20);
+        shell.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});
+        TextView title=new TextView(a);title.setText(heading);title.setTextColor(0xffffffff);title.setTextSize(28);title.setTypeface(Typeface.DEFAULT,Typeface.BOLD);title.setPadding(gap,dp(a,16),gap,dp(a,12));shell.addView(title);
+        ScrollView scroll=new ScrollView(a);scroll.setFillViewport(true);scroll.setClipToPadding(false);
+        LinearLayout box=new LinearLayout(a);box.setOrientation(1);box.setPadding(gap,0,gap,gap);
+        scroll.addView(box,new ScrollView.LayoutParams(-1,-2));shell.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));a.setContentView(shell);shell.requestApplyInsets();return box;
     }
 }

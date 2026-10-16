@@ -6,5 +6,5 @@ final class Diagnostics {
     private static int resumes;
     static synchronized void resume(){resumes++;}
     static synchronized void event(String text){if(events.size()==12)events.removeFirst();events.addLast(text);}
-    static synchronized String report(){StringBuilder out=new StringBuilder("SpotEnhancer 0.9\nFragment resume calls: "+resumes+"\n");for(String line:events)out.append(line).append('\n');return out.toString();}
+    static synchronized String report(){StringBuilder out=new StringBuilder("SpotEnhancer 0.10\nFragment resume calls: "+resumes+"\n");for(String line:events)out.append(line).append('\n');return out.toString();}
 }

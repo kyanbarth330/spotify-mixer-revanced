@@ -56,6 +56,7 @@ public class AndroidSmokeTest {
             assertTrue(device.wait(Until.hasObject(By.text("Add to Mixer").enabled(true)),10000));waitText("Add to Mixer").click();
             waitText("Playlist Mixer").click();waitText("Playlist Alpha");waitText("Playlist Beta");
             UiObject2 slider=device.findObject(By.clazz("android.widget.SeekBar"));assertNotNull(slider);Rect bounds=slider.getVisibleBounds();device.click(bounds.left+bounds.width()*2/5,bounds.centerY());device.waitForIdle();
+            waitText("Shuffle mix").click();assertTrue(context.getSharedPreferences(PREFS,0).getBoolean("shuffle",false));
             assertNotEquals(70,context.getSharedPreferences(PREFS,0).getInt("ratio",70));
             assertEquals("Playlist Alpha",context.getSharedPreferences(PREFS,0).getString("a_title",null));
             assertEquals("Playlist Beta",context.getSharedPreferences(PREFS,0).getString("b_title",null));
@@ -67,6 +68,19 @@ public class AndroidSmokeTest {
             waitText("Back to SpotEnhancer").click();waitText("Diagnostics").click();waitText("Diagnostics");assertNotNull(device.findObject(By.textContains("keys=[")));screenshot("04-diagnostics");
             waitText("Back to Spotify").click();waitText("Playlist Beta");waitText("SpotEnhancer");screenshot("05-return-to-fixture");
         }finally{device.pressHome();}
+    }
+    @Test public void reusedFragmentReadsReplacementArguments()throws Exception{
+        try(androidx.test.core.app.ActivityScenario<FixtureActivity> scenario=androidx.test.core.app.ActivityScenario.launch(FixtureActivity.class)){
+            final p.gs10[] fragment={null};
+            scenario.onActivity(activity->{android.view.View root=activity.findViewById(android.R.id.content);android.os.Bundle args=new android.os.Bundle();args.putString("uri","spotify:playlist:37i9dQZF1DXcBWIGoYBM5M");fragment[0]=new p.gs10(args,root);org.example.spotifymixer.runtime.Mixer.fragmentResumed(new p.av10(fragment[0]));});
+            device.waitForIdle();
+            scenario.onActivity(activity->{try{
+                java.lang.reflect.Method current=org.example.spotifymixer.runtime.Mixer.class.getDeclaredMethod("currentPlaylist");current.setAccessible(true);
+                assertEquals("spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",((String[])current.invoke(null))[0]);
+                android.os.Bundle replacement=new android.os.Bundle();replacement.putString("uri","spotify:playlist:37i9dQZF1DX0XUsuxWHRQd");fragment[0].f=replacement;
+                assertEquals("spotify:playlist:37i9dQZF1DX0XUsuxWHRQd",((String[])current.invoke(null))[0]);
+            }catch(ReflectiveOperationException error){throw new AssertionError(error);}});
+        }
     }
     @Test public void rejectsAmbiguousHeadings(){
         try(androidx.test.core.app.ActivityScenario<FixtureActivity> scenario=androidx.test.core.app.ActivityScenario.launch(FixtureActivity.class)){
