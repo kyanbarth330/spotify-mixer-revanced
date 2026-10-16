@@ -35,8 +35,10 @@ public class AndroidSmokeTest {
             // Gradle uninstalls the fixture after tests, deleting app-scoped external files.
             // Shell-owned evidence survives that cleanup on this fresh, own-code-only emulator.
             String path="/sdcard/Download/spotenhancer-evidence/"+name+".png";
-            String result=device.executeShellCommand("mkdir -p /sdcard/Download/spotenhancer-evidence && screencap -p "+path+" && test -s "+path+" && echo SAVED");
-            assertEquals("SAVED",result.trim());
+            device.executeShellCommand("mkdir -p /sdcard/Download/spotenhancer-evidence");
+            device.executeShellCommand("screencap -p "+path);
+            String size=device.executeShellCommand("stat -c %s "+path);
+            assertTrue("Screenshot must contain PNG data",Long.parseLong(size.trim())>1000);
         }catch(java.io.IOException ex){throw new AssertionError("Cannot preserve screenshot",ex);}
     }
 
