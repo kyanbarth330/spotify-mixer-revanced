@@ -123,3 +123,9 @@ The pure queue planner is a separate implementation step, not playback integrati
 The final [Android 35 run 38841185738](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38841185738) passed all four instrumentation tests. Its downloaded JUnit report and six screenshots were checked. See [EMULATOR_TESTS.md](EMULATOR_TESTS.md) for the exact own-code-only scope, evidence artifact and screenshot-collection failures repaired along the way. No Spotify execution claim follows from these tests.
 
 Final delivery after the diagnostic key-format repair: installer build **38841700440**, artifact **12021403453**; downloaded payload validation passes again (3 DEX/27 runtime/UI classes). Android 35 run **38841700530** passes 4/4 tests and artifact **12021354163** contains six screenshots plus reports; the repaired diagnostic key names were visually checked. The README points to this final installer. All Spotify-specific limitations above remain in effect.
+
+## Version 0.8 — device-reported runtime rejection
+
+The user's 0.7 screenshot shows `Invalid or duplicate runtime class` for `ui/EnhancerTheme$$ExternalSyntheticLambda0`. The class is present, but Patcher.validateRuntime only permitted the runtime package and rejected the new original ui package. The error text conflated invalid namespace and duplicate detection. Earlier CI payload inspection confirmed presence, not acceptance by the patcher's validator; the fixture signed its own APK without running this payload acceptance step.
+
+0.8 permits both exact original package prefixes (runtime/ and ui/), retaining duplicate and unrelated-package rejection. Regressions cover the theme, its D8 lambda, duplicates and unrelated packages. CI now extracts the actual final installer asset and passes it through Patcher.validateRuntime before publishing. This check needs no Spotify APK and is not a full Spotify patch/device test.

@@ -66,4 +66,22 @@ public class PatcherTest {
             assertEquals(2,Patcher.validateRuntime(f).size());
         } finally { f.delete(); }
     }
+    private void checkPayload(String extra, boolean reject) throws Exception {
+        File f=File.createTempFile("runtime", ".zip");
+        try {
+            try(java.util.zip.ZipOutputStream out=new java.util.zip.ZipOutputStream(new FileOutputStream(f))){
+                out.putNextEntry(new java.util.zip.ZipEntry("classes.dex"));out.write(runtimeClass("Lorg/example/spotifymixer/runtime/Mixer;",true));out.closeEntry();
+                out.putNextEntry(new java.util.zip.ZipEntry("classes2.dex"));out.write(runtimeClass(extra,false));out.closeEntry();
+            }
+            try { assertEquals(2,Patcher.validateRuntime(f).size());if(reject)fail("accepted invalid runtime"); }
+            catch(IOException error){if(!reject)throw error;assertTrue(error.getMessage().contains("Invalid or duplicate"));}
+        }finally{f.delete();}
+    }
+    @Test public void sharedThemeAndD8LambdaAccepted() throws Exception {
+        checkPayload("Lorg/example/spotifymixer/ui/EnhancerTheme;",false);
+        checkPayload("Lorg/example/spotifymixer/ui/EnhancerTheme$$ExternalSyntheticLambda0;",false);
+    }
+    @Test public void duplicateRuntimeClassRejected() throws Exception {checkPayload("Lorg/example/spotifymixer/runtime/Mixer;",true);}
+    @Test public void unrelatedPackageRejected() throws Exception {checkPayload("Lunrelated/Helper;",true);}
+
 }

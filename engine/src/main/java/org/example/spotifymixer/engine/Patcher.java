@@ -85,7 +85,7 @@ public final class Patcher {
         for (byte[] bytes : payloads) {
             DexBackedDexFile dex = new DexBackedDexFile(Opcodes.forApi(24), bytes);
             for (ClassDef cls : dex.getClasses()) {
-                if (!cls.getType().startsWith("Lorg/example/spotifymixer/runtime/") || !types.add(cls.getType()))
+                if (!(cls.getType().startsWith("Lorg/example/spotifymixer/runtime/") || cls.getType().startsWith("Lorg/example/spotifymixer/ui/")) || !types.add(cls.getType()))
                     throw new IOException("Invalid or duplicate runtime class: " + cls.getType());
                 if (cls.getType().equals("Lorg/example/spotifymixer/runtime/Mixer;")) {
                     for (Method m : cls.getMethods()) {

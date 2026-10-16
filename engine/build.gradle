@@ -12,3 +12,11 @@ tasks.register('validateLocalApk', JavaExec) {
     mainClass = 'org.example.spotifymixer.engine.LocalValidation'
     if (project.hasProperty('apk')) args project.property('apk'), project.property('runtimeDex'), project.property('testKey'), project.property('validationDir')
 }
+
+// Exercise the same validator the Android installer runs, on the actual packaged asset.
+tasks.register('validateInstallerRuntime', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'org.example.spotifymixer.engine.InstallerPayloadValidation'
+    if (project.hasProperty('installerApk')) args project.property('installerApk')
+}
