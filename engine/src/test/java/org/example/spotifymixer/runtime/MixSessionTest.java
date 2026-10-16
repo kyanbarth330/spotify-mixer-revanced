@@ -1,0 +1,8 @@
+package org.example.spotifymixer.runtime;
+import org.junit.Test;import static org.junit.Assert.*;import java.util.*;import java.util.function.Consumer;import java.io.IOException;
+public class MixSessionTest {
+    static final class Backend implements MixSession.Backend {List<String> played;boolean fail;Runnable loading;public MixSession.Playlist load(String uri,Consumer<String> progress)throws Exception{if(loading!=null)loading.run();if(fail)throw new IOException("offline");List<String> tracks=new ArrayList<>();for(int i=0;i<100;i++)tracks.add("spotify:track:"+String.format(java.util.Locale.ROOT,"%022d",i+(uri.equals("A")?0:100)));return new MixSession.Playlist(uri,tracks);}public void play(List<String> tracks){played=tracks;}}
+    @Test public void loadsBothPlansRatioAndOnlyPlaysOnExplicitStart()throws Exception{Backend b=new Backend();MixSession s=new MixSession(b);MixSession.Prepared p=s.prepare("A","B",48,m->{});assertNull(b.played);assertEquals(48,p.plan.fromA);assertEquals(52,p.plan.fromB);s.start(p);assertEquals(100,b.played.size());try{s.start(p);fail();}catch(IOException expected){}}
+    @Test public void failedReloadInvalidatesOldQueue()throws Exception{Backend b=new Backend();MixSession s=new MixSession(b);MixSession.Prepared p=s.prepare("A","B",70,m->{});b.fail=true;try{s.prepare("A","B",70,m->{});fail();}catch(IOException expected){}try{s.start(p);fail();}catch(IOException expected){}assertNull(b.played);}
+    @Test public void cancellationCannotPublishPreparedQueue()throws Exception{Backend b=new Backend();MixSession s=new MixSession(b);b.loading=s::invalidate;try{s.prepare("A","B",70,m->{});fail();}catch(IOException expected){}assertNull(b.played);}
+}

@@ -120,8 +120,8 @@ public final class Patcher {
             try (InputStream in = zip.getInputStream(zip.getEntry("classes.dex"))) { playlist = PlaylistHook.patch(read(in)); }
             log.accept("[PATCH] AndroidManifest.xml · private SpotEnhancer Activity");
             try (InputStream in = zip.getInputStream(zip.getEntry("AndroidManifest.xml"))) { manifest = ManifestEditor.addActivity(read(in)); }
-            log.accept("[PATCH] classes2.dex · SpotifyMainActivity.onResume");
-            try (InputStream in = zip.getInputStream(zip.getEntry("classes2.dex"))) { patched = hook(read(in)); }
+            log.accept("[PATCH] classes2.dex · Activity + native playlist/player services");
+            try (InputStream in = zip.getInputStream(zip.getEntry("classes2.dex"))) { patched = hook(ServiceHooks.patch(read(in))); }
             for (int i = 0; i < runtimeDex.size()+1; i++)
                 if (zip.getEntry("classes" + (18+i) + ".dex") != null) throw new IOException("Runtime DEX slot already occupied");
             log.accept("[BUILD] Rebuilding APK · preserve resources/native libraries · 16 KiB alignment");

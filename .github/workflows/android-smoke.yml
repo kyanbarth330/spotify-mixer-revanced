@@ -7,6 +7,7 @@ on:
       - 'tools/run_emulator_smoke.sh'
       - 'runtime/**'
       - 'shared-ui/**'
+      - 'shared-core/**'
       - 'engine/**'
       - 'settings.gradle'
       - '.github/workflows/android-smoke.yml'

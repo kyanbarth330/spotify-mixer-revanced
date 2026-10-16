@@ -21,5 +21,7 @@ def check(path):
     assert 'Lorg/example/spotifymixer/runtime/PageParameters;' in types, 'Missing page-parameters reader'
     assert 'Lorg/example/spotifymixer/runtime/PlaylistTitle;' in types, 'Missing playlist title helper'
     assert 'Lorg/example/spotifymixer/ui/EnhancerTheme;' in types, 'Missing shared UI helper'
+    for name in ['NativeBridge','PlaylistWire','MixSession','MixPlanner']:
+        assert 'Lorg/example/spotifymixer/runtime/'+name+';' in types, 'Missing mixer helper: '+name
     print(f'PASS: installer asset has {len(names)} DEX files, {len(types)} classes and Mixer.attach')
 if __name__=='__main__': check(sys.argv[1])

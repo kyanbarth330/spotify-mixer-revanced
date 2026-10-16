@@ -12,6 +12,8 @@ import android.widget.*;
 /** Dedicated private screen with a normal Activity back stack, ready for more features. */
 public final class SpotEnhancerActivity extends Activity {
     private boolean mixer;
+    private int generation;
+    private final MixSession session=new MixSession(new NativeBridge());
     private String pending,title;
     private SharedPreferences prefs;
     public void onCreate(Bundle state){
@@ -29,28 +31,64 @@ public final class SpotEnhancerActivity extends Activity {
         LinearLayout box=EnhancerTheme.page(this,heading);
         EnhancerTheme.button(box,back,false,action);return box;
     }
-    private void home(){mixer=false;LinearLayout box=page("SpotEnhancer","Back to Spotify",()->returnToSpotify());
+    private void home(){generation++;session.invalidate();mixer=false;LinearLayout box=page("SpotEnhancer","Back to Spotify",()->returnToSpotify());
         text(box,"Make Spotify your own.",16);
         button(box,"Playlist Mixer",()->showMixer());
         button(box,"Diagnostics",()->diagnostics());
     }
-    private void showMixer(){mixer=true;LinearLayout box=page("Playlist Mixer","Back to Spotify",()->returnToSpotify());
-        if(pending!=null){text(box,title==null?"Selected playlist":title,20);
-            button(box,"Use as Playlist A",()->save("a"));button(box,"Use as Playlist B",()->save("b"));}
-        LinearLayout cardA=EnhancerTheme.card(box);text(cardA,"Playlist A",16);text(cardA,prefs.getString("a_title",PlaylistUri.normalize(prefs.getString("a",""))==null?"Not selected":"Selected playlist"),20);
-        LinearLayout cardB=EnhancerTheme.card(box);text(cardB,"Playlist B",16);text(cardB,prefs.getString("b_title",PlaylistUri.normalize(prefs.getString("b",""))==null?"Not selected":"Selected playlist"),20);
+    private void showMixer(){
+        final int token=++generation;session.invalidate();mixer=true;
+        LinearLayout box=page("Playlist Mixer","Back to Spotify",()->returnToSpotify());
+        if(pending!=null){text(box,title==null?"Selected playlist":title,20);button(box,"Use as Playlist A",()->save("a"));button(box,"Use as Playlist B",()->save("b"));}
+        LinearLayout cardA=EnhancerTheme.card(box);text(cardA,"Playlist A",16);TextView aName=text(cardA,prefs.getString("a_title",prefs.contains("a")?"Selected playlist":"Not selected"),20);
+        LinearLayout cardB=EnhancerTheme.card(box);text(cardB,"Playlist B",16);TextView bName=text(cardB,prefs.getString("b_title",prefs.contains("b")?"Selected playlist":"Not selected"),20);
         TextView ratio=text(box,"",18);SeekBar slider=new SeekBar(this);slider.setProgressTintList(android.content.res.ColorStateList.valueOf(EnhancerTheme.GREEN));slider.setThumbTintList(android.content.res.ColorStateList.valueOf(EnhancerTheme.GREEN));slider.setMax(100);slider.setProgress(prefs.getInt("ratio",70));
-        ratio.setText("A: "+slider.getProgress()+"%   B: "+(100-slider.getProgress())+"%");
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){ratio.setText("A: "+n+"%   B: "+(100-n)+"%");if(user)prefs.edit().putInt("ratio",n).apply();}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});box.addView(slider);
-        text(box,"Choose a playlist below, then tap Add to Mixer in Spotify. No URL entry or share sheet is needed.",16);
-        button(box,"Choose Playlist A",()->choose("a"));
-        button(box,"Choose Playlist B",()->choose("b"));
-        text(box,"Playlist selection and ratio are saved. Playback mixing is not available yet.",14);
+        ratio.setText("A: "+slider.getProgress()+"%   B: "+(100-slider.getProgress())+"%");box.addView(slider);
+        text(box,"Open a playlist in Spotify and tap Add to Mixer to select it.",16);
+        Button chooseA=EnhancerTheme.button(box,"Choose Playlist A",true,()->choose("a"));
+        Button chooseB=EnhancerTheme.button(box,"Choose Playlist B",true,()->choose("b"));
+        text(box,"Experimental native playback · up to 100 unique tracks",14);
+        text(box,NativeBridge.state(),14);
+        final TextView state=text(box,NativeBridge.ready()?"Load both playlists to prepare the mix.":"Open a playlist and play a track in Spotify once, then return here and refresh the connection.",14);
+        Button load=EnhancerTheme.button(box,"Load mix",true,()->{});
+        Button start=EnhancerTheme.button(box,"Start Mix",true,()->{});start.setEnabled(false);
+        MixSession.Prepared[] prepared={null};
+        Runnable allowLoad=()->load.setEnabled(NativeBridge.ready()&&PlaylistUri.normalize(prefs.getString("a",null))!=null&&PlaylistUri.normalize(prefs.getString("b",null))!=null);
+        allowLoad.run();
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){ratio.setText("A: "+n+"%   B: "+(100-n)+"%");if(user){prefs.edit().putInt("ratio",n).apply();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Ratio changed. Load the mix again.");}}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
+        load.setOnClickListener(v->{
+            load.setEnabled(false);start.setEnabled(false);slider.setEnabled(false);chooseA.setEnabled(false);chooseB.setEnabled(false);prepared[0]=null;
+            String a=prefs.getString("a",null),b=prefs.getString("b",null);int percent=slider.getProgress();
+            new Thread(()->{
+                try{
+                    MixSession.Prepared next=session.prepare(a,b,percent,message->onMixUi(token,()->state.setText(message)));
+                    onMixUi(token,()->{
+                        prepared[0]=next;
+                        if(!next.a.title.isEmpty()){aName.setText(next.a.title);prefs.edit().putString("a_title",next.a.title).apply();}
+                        if(!next.b.title.isEmpty()){bName.setText(next.b.title);prefs.edit().putString("b_title",next.b.title).apply();}
+                        String note=next.plan.fromA!=(int)Math.round(next.plan.tracks.size()*percent/100.0)?" Source limits changed the final ratio.":"";
+                        state.setText("Ready: "+next.plan.tracks.size()+" tracks · A: "+next.plan.fromA+" / B: "+next.plan.fromB+note);start.setEnabled(true);
+                    });
+                }catch(Exception error){onMixUi(token,()->state.setText("Could not load mix: "+errorMessage(error)));}
+                finally{onMixUi(token,()->{slider.setEnabled(true);chooseA.setEnabled(true);chooseB.setEnabled(true);allowLoad.run();});}
+            },"spotenhancer-load").start();
+        });
+        start.setOnClickListener(v->{
+            MixSession.Prepared next=prepared[0];prepared[0]=null;start.setEnabled(false);load.setEnabled(false);slider.setEnabled(false);chooseA.setEnabled(false);chooseB.setEnabled(false);state.setText("Sending the mix to Spotify…");
+            new Thread(()->{
+                try{session.start(next);onMixUi(token,()->state.setText("Spotify accepted the mix request. Return to Spotify to check playback."));}
+                catch(Exception error){onMixUi(token,()->state.setText("Could not start mix: "+errorMessage(error)));}
+                finally{onMixUi(token,()->{slider.setEnabled(true);chooseA.setEnabled(true);chooseB.setEnabled(true);allowLoad.run();});}
+            },"spotenhancer-play").start();
+        });
+        button(box,"Refresh connection",()->showMixer());
         button(box,"Back to SpotEnhancer",()->{pending=null;home();});
     }
-    private void diagnostics(){
+    private void onMixUi(int token,Runnable action){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed()&&mixer&&generation==token)action.run();});}
+    private static String errorMessage(Exception error){Throwable cause=error;while(cause.getCause()!=null)cause=cause.getCause();return cause.getMessage()==null?cause.getClass().getSimpleName():cause.getMessage();}
+    private void diagnostics(){generation++;session.invalidate();mixer=false;
         LinearLayout box=page("Diagnostics","Back to Spotify",()->returnToSpotify());
-        text(box,Diagnostics.report(),14);
+        text(box,Diagnostics.report()+"\n"+NativeBridge.state(),14);
         text(box,"Open a playlist in Spotify first, then return here. This report contains class names and argument keys, not playlist URLs or names.",14);
         button(box,"Back to SpotEnhancer",()->home());
     }

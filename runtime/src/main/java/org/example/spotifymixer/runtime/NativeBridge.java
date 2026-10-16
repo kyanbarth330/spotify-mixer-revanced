@@ -1,0 +1,72 @@
+package org.example.spotifymixer.runtime;
+
+import java.io.IOException;import java.lang.reflect.*;import java.util.*;import java.util.concurrent.*;import java.util.concurrent.atomic.AtomicReference;import java.util.function.Consumer;
+/** SHA-pinned native service adapter. Never obtains tokens or bypasses playback restrictions. */
+public final class NativeBridge implements MixSession.Backend {
+    private static volatile Object playlist,player;
+    public static void capturePlaylist(Object service){playlist=service;Diagnostics.event("Native playlist service captured");}
+    public static void capturePlayer(Object service){player=service;Diagnostics.event("Native player service captured");}
+    public static boolean ready(){return playlist!=null&&player!=null;}
+    public static String state(){return "Playlist service: "+(playlist==null?"waiting":"ready")+" · Player service: "+(player==null?"waiting":"ready");}
+    private static Object field(Object o,String name)throws Exception{Field f=o.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(o);}
+    private static Class<?> type(ClassLoader loader,String name)throws Exception{return Class.forName(name,false,loader);}
+    private static Object invoke(Method method,Object target,Object... args)throws Exception{
+        try{return method.invoke(target,args);}catch(InvocationTargetException error){Throwable cause=error.getCause();if(cause instanceof Exception)throw (Exception)cause;throw error;}
+    }
+    public MixSession.Playlist load(String uri,Consumer<String> progress)throws Exception{
+        Object service=playlist;if(service==null)throw new IOException("Open a playlist in Spotify first");
+        ClassLoader loader=service.getClass().getClassLoader();Object client=field(service,"f"),context=field(service,"c");
+        Class<?> base=type(loader,"com.spotify.esperanto.esperanto.CoroutineClientBase");Field tf=base.getDeclaredField("transport");tf.setAccessible(true);Object transport=tf.get(client);
+        Class<?> continuation=type(loader,"p.uel"),transportApi=type(loader,"com.spotify.esperanto.esperanto.CoroutineTransport");
+        Method call=transportApi.getMethod("callSingle",String.class,String.class,byte[].class,continuation);
+        List<String> tracks=new ArrayList<>();String title="";int offset=0,total=-1;long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(90);
+        while(offset<10000){
+            if(Thread.currentThread().isInterrupted())throw new InterruptedException();
+            long remaining=deadline-System.nanoTime();if(remaining<=0)throw new IOException("Playlist loading timed out; try again");
+            CountDownLatch done=new CountDownLatch(1);AtomicReference<Object> result=new AtomicReference<>();
+            Object callback=Proxy.newProxyInstance(loader,new Class<?>[]{continuation},(proxy,method,args)->{
+                switch(method.getName()){
+                    case "getContext":return context;
+                    case "resumeWith":result.set(args[0]);done.countDown();return null;
+                    case "toString":return "SpotEnhancer playlist continuation";
+                    case "hashCode":return System.identityHashCode(proxy);
+                    case "equals":return proxy==args[0];
+                    default:throw new UnsupportedOperationException(method.getName());
+                }
+            });
+            progress.accept("Loading playlist items "+offset+"–"+(offset+100));
+            Object immediate=invoke(call,transport,"spotify.playlist_esperanto.proto.PlaylistDataService","Get",PlaylistWire.request(uri,offset,100),callback);
+            Object value=immediate;
+            if(!(value instanceof byte[])){
+                if(!done.await(Math.min(remaining,TimeUnit.SECONDS.toNanos(30)),TimeUnit.NANOSECONDS))throw new IOException("Playlist service timed out; try again");value=result.get();
+            }
+            if(!(value instanceof byte[])){
+                // This is the same Kotlin Result failure check used by the original callers.
+                invoke(type(loader,"p.yd70").getMethod("M",Object.class),null,value);
+                throw new IOException("Unexpected playlist service response");
+            }
+            PlaylistWire.Page page=PlaylistWire.response((byte[])value);
+            if(page.loading)throw new IOException("Spotify is still loading this playlist; try again");
+            if(total>=0&&page.total>=0&&total!=page.total)throw new IOException("Playlist changed while loading; try again");
+            if(page.total>=0)total=page.total;
+            if(total>10000)throw new IOException("Playlists above 10,000 items are not supported");
+            if(!page.title.isEmpty())title=page.title;tracks.addAll(page.tracks);offset+=page.rows;
+            if(total>=0&&offset>=total)break;
+            if(page.rows<100){if(total>offset)throw new IOException("Incomplete playlist response; try again");break;}
+            if(offset>=10000)throw new IOException("Playlist size limit reached before completion");
+        }
+        return new MixSession.Playlist(title,tracks);
+    }
+    public void play(List<String> tracks)throws Exception{
+        Object service=player;if(service==null)throw new IOException("Play a track in Spotify first");if(tracks.isEmpty())throw new IOException("The mix is empty");
+        ClassLoader loader=service.getClass().getClassLoader();Class<?> list=type(loader,"p.l960"),ctx=type(loader,"com.spotify.player.model.Context"),origin=type(loader,"com.spotify.player.model.PlayOrigin"),command=type(loader,"com.spotify.player.model.command.PlayCommand");
+        Object uris=invoke(list.getMethod("p",Collection.class),null,tracks);
+        Object context=invoke(ctx.getMethod("fromTrackUris",String.class,list),null,"spotify:collection:tracks",uris);
+        Object source=invoke(origin.getMethod("create",String.class),null,"spotenhancer");
+        Object request=invoke(command.getMethod("create",ctx,origin),null,context,source);
+        Object single=invoke(service.getClass().getMethod("a",command),service,request);
+        Class<?> rx=type(loader,"io.reactivex.rxjava3.core.Single");single=invoke(rx.getMethod("timeout",long.class,TimeUnit.class),single,30L,TimeUnit.SECONDS);
+        Object response=invoke(rx.getMethod("blockingGet"),single);
+        if(!type(loader,"p.ibg").isInstance(response))throw new IOException("Spotify did not accept the play request");
+    }
+}

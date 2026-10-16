@@ -4,3 +4,5 @@ rootProject.name = "SpotifyMixerUiDemo"
 include ':installer'
 include ':engine', ':runtime'
 include ':testhost'
+
+include ':shared-core'

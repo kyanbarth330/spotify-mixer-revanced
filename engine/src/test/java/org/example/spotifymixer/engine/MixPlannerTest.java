@@ -9,4 +9,5 @@ public class MixPlannerTest {
     @Test public void deduplicatesAcrossSourcesAndIgnoresInvalidEntries(){List<String> a=new ArrayList<>(tracks(0,2));a.add(null);a.add("spotify:local:unavailable");a.add(a.get(0));MixPlanner.Plan p=MixPlanner.plan(a,tracks(0,3),50,10);assertEquals(3,p.tracks.size());assertEquals(3,new HashSet<>(p.tracks).size());}
     @Test public void handlesEndpointsEmptyAndRounding(){assertEquals(5,MixPlanner.plan(tracks(0,5),tracks(100,5),100,5).fromA);assertEquals(5,MixPlanner.plan(tracks(0,5),tracks(100,5),0,5).fromB);assertTrue(MixPlanner.plan(null,null,50,10).tracks.isEmpty());assertTrue(MixPlanner.plan(tracks(0,5),null,50,0).tracks.isEmpty());assertEquals(2,MixPlanner.plan(tracks(0,5),tracks(100,5),50,3).fromA);}
     @Test(expected=IllegalArgumentException.class)public void rejectsInvalidRatio(){MixPlanner.plan(null,null,101,10);}
+    @Test public void sharedTracksDoNotStealOtherSourcesQuota(){MixPlanner.Plan p=MixPlanner.plan(tracks(0,2),tracks(0,1),50,2);assertEquals(1,p.fromA);assertEquals(1,p.fromB);assertEquals(2,new HashSet<>(p.tracks).size());}
 }
