@@ -119,6 +119,7 @@ public class AndroidSmokeTest {
             assertTrue(org.example.spotifymixer.runtime.EqualizerRuntime.status(),org.example.spotifymixer.runtime.EqualizerRuntime.status().startsWith("Active on local audio session"));
             assertNotNull(org.example.spotifymixer.runtime.EqualizerRuntime.device());
             waitText("Refresh connection").click();waitText("Frequency bands");screenshot("15-equalizer-own-audio-session");
+            UiObject2 band=device.findObject(By.clazz("android.widget.SeekBar"));assertNotNull(band);Rect bounds=band.getVisibleBounds();device.click(bounds.left+bounds.width()*3/4,bounds.centerY());device.waitForIdle();assertEquals(5,prefs.getInt("eq_preset",-1));assertTrue(prefs.getAll().keySet().stream().anyMatch(k->k.startsWith("eq_hz_")));
             waitText("Reset to Flat").click();assertEquals(0,prefs.getInt("eq_preset",-1));
             waitText("Enable equalizer").click();assertFalse(prefs.getBoolean("eq_enabled",true));assertNull(org.example.spotifymixer.runtime.EqualizerRuntime.device());
             com.spotify.playbacknative.AudioRenderer.destroyed(id);InstrumentationRegistry.getInstrumentation().waitForIdleSync();
