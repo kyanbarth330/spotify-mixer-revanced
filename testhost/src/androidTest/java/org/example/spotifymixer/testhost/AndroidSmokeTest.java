@@ -84,7 +84,7 @@ public class AndroidSmokeTest {
                 java.lang.reflect.Method current=org.example.spotifymixer.runtime.Mixer.class.getDeclaredMethod("currentPlaylist");current.setAccessible(true);
                 assertEquals("spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",((String[])current.invoke(null))[0]);
                 android.os.Bundle replacement=new android.os.Bundle();replacement.putString("uri","spotify:playlist:37i9dQZF1DX0XUsuxWHRQd");fragment[0].f=replacement;
-                assertEquals("spotify:playlist:37i9dQZF1DX0XUsuxWHRQd",((String[])current.invoke(null))[0]);
+                assertEquals("spotify:playlist:37i9dQZF1DX0XUsuxWHRQd",((String[])current.invoke(null))[0]);fragment[0].f=null;assertNull(current.invoke(null));
             }catch(ReflectiveOperationException error){throw new AssertionError(error);}});
         }
     }

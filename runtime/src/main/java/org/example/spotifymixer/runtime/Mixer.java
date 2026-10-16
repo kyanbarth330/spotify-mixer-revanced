@@ -48,7 +48,7 @@ public final class Mixer {
     }
     static String[] readPlaylist(View root,Object fragment){return readPlaylist(root,fragment,true);}
     static String[] readPlaylist(View root,Object fragment,boolean withTitle){
-        try{Field args=Class.forName("p.gs10",false,fragment.getClass().getClassLoader()).getDeclaredField("f");args.setAccessible(true);Bundle bundle=(Bundle)args.get(fragment);if(bundle==null)return null;String uri=PlaylistUri.fromBundle(bundle);if(uri==null)return null;String title=withTitle?PlaylistTitle.from(bundle,root):null;return new String[]{uri,title==null?"Selected playlist":title};}catch(ReflectiveOperationException|RuntimeException error){return null;}
+        try{Class<?> base=Class.forName("p.gs10",false,fragment.getClass().getClassLoader());Field args=base.getDeclaredField("f"),view=base.getDeclaredField("e1");args.setAccessible(true);view.setAccessible(true);if(view.get(fragment)!=root)return null;Bundle bundle=(Bundle)args.get(fragment);if(bundle==null)return null;String uri=PlaylistUri.fromBundle(bundle);if(uri==null)return null;String title=withTitle?PlaylistTitle.from(bundle,root):null;return new String[]{uri,title==null?"Selected playlist":title};}catch(ReflectiveOperationException|RuntimeException error){return null;}
     }
     public static void fragmentResumed(Object manager) {
         try {
@@ -57,7 +57,7 @@ public final class Mixer {
             Class<?> base=Class.forName("p.gs10",false,manager.getClass().getClassLoader());
             Field args=base.getDeclaredField("f"),view=base.getDeclaredField("e1");args.setAccessible(true);view.setAccessible(true);
             Bundle bundle=(Bundle)args.get(fragment);View root=(View)view.get(fragment);
-            if(root==null || bundle==null){Diagnostics.event("Skipped: "+fragment.getClass().getName()+" view="+(root==null?"null":root.getClass().getName())+" arguments="+(bundle==null?"none":"present"));return;}
+            if(root==null || bundle==null){if(root!=null){contexts.remove(root);PlaylistAction.remove(root);}Diagnostics.event("Skipped: "+fragment.getClass().getName()+" view="+(root==null?"null":root.getClass().getName())+" arguments="+(bundle==null?"none":"present"));return;}
             Diagnostics.event("Fragment "+fragment.getClass().getName()+" root="+root.getClass().getName()+" keys="+new ArrayList<>(bundle.keySet()));
             String uri=PlaylistUri.fromBundle(bundle);
             if(uri==null){
