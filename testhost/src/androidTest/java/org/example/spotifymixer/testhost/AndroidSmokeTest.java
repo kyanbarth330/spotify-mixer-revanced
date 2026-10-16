@@ -119,6 +119,17 @@ public class AndroidSmokeTest {
             });
         }finally{prefs.edit().clear().commit();org.example.spotifymixer.runtime.ThemeRuntime.refresh(context);}
     }
+    @Test public void nativeThemeHookExecutesOwnDexOnAndroid()throws Exception{
+        String type="Lp/k5k1;";org.jf.dexlib2.iface.Method method=new org.jf.dexlib2.immutable.ImmutableMethod(type,"K",java.util.Collections.singletonList(new org.jf.dexlib2.immutable.ImmutableMethodParameter("J",java.util.Collections.emptySet(),null)),"I",9,java.util.Collections.emptySet(),java.util.Collections.emptySet(),new org.jf.dexlib2.immutable.ImmutableMethodImplementation(3,java.util.Arrays.asList(new org.jf.dexlib2.immutable.instruction.ImmutableInstruction31i(org.jf.dexlib2.Opcode.CONST,0,0xff121212),new org.jf.dexlib2.immutable.instruction.ImmutableInstruction11x(org.jf.dexlib2.Opcode.RETURN,0)),java.util.Collections.emptyList(),java.util.Collections.emptyList()));
+        org.jf.dexlib2.iface.ClassDef cls=new org.jf.dexlib2.immutable.ImmutableClassDef(type,1,"Ljava/lang/Object;",java.util.Collections.emptyList(),null,java.util.Collections.emptySet(),java.util.Collections.emptyList(),java.util.Collections.singletonList(method));org.jf.dexlib2.writer.io.MemoryDataStore data=new org.jf.dexlib2.writer.io.MemoryDataStore();org.jf.dexlib2.writer.pool.DexPool.writeTo(data,new org.jf.dexlib2.immutable.ImmutableDexFile(org.jf.dexlib2.Opcodes.forApi(24),java.util.Collections.singletonList(cls)));
+        java.lang.reflect.Method patch=Class.forName("org.example.spotifymixer.engine.ThemeHook").getDeclaredMethod("patch",byte[].class);patch.setAccessible(true);byte[][] transformed=(byte[][])patch.invoke(null,(Object)data.getData());java.io.File dex=java.io.File.createTempFile("own-theme-hook-",".dex",context.getCodeCacheDir());android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);
+        try{
+            try(java.io.FileOutputStream out=new java.io.FileOutputStream(dex)){assertTrue(dex.setReadOnly());out.write(transformed[1]);}
+            dalvik.system.DexClassLoader loader=new dalvik.system.DexClassLoader(dex.getAbsolutePath(),context.getCodeCacheDir().getAbsolutePath(),null,context.getClassLoader());java.lang.reflect.Method color=loader.loadClass("p.k5k1").getMethod("K",long.class);
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{prefs.edit().putBoolean("theme_enabled",true).putString("theme_preset","ocean").commit();org.example.spotifymixer.runtime.ThemeRuntime.refresh(context);});assertEquals(org.example.spotifymixer.runtime.ThemePalette.find("ocean").background,((Integer)color.invoke(null,0L)).intValue());
+            InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{prefs.edit().putBoolean("theme_enabled",false).commit();org.example.spotifymixer.runtime.ThemeRuntime.refresh(context);});assertEquals(0xff121212,((Integer)color.invoke(null,0L)).intValue());
+        }finally{dex.delete();InstrumentationRegistry.getInstrumentation().runOnMainSync(()->{prefs.edit().remove("theme_enabled").remove("theme_preset").commit();org.example.spotifymixer.runtime.ThemeRuntime.refresh(context);});}
+    }
     @Test public void reusedFragmentReadsReplacementArguments()throws Exception{
         try(androidx.test.core.app.ActivityScenario<FixtureActivity> scenario=androidx.test.core.app.ActivityScenario.launch(FixtureActivity.class)){
             final p.gs10[] fragment={null};
