@@ -57,8 +57,9 @@ public class AndroidSmokeTest {
             UiObject2 slider=device.findObject(By.desc("Weight for Playlist Alpha"));assertNotNull(slider);Rect bounds=slider.getVisibleBounds();device.click(bounds.left+bounds.width()/2,bounds.centerY());device.waitForIdle();
             assertEquals(100,library.active().sources.stream().mapToInt(source->source.weight).sum());
             waitText("Shuffle mix").click();assertTrue(device.wait(Until.hasObject(By.text("Shuffle mix").checked(true)),4000));device.waitForIdle();assertTrue(library.active().shuffle);
-            screenshot("03-multi-playlist-mixer");
-            waitText("Save preset").click();UiObject2 name=device.wait(Until.findObject(By.clazz("android.widget.EditText")),3000);assertNotNull(name);name.setText("Morning blend");waitText("Save").click();waitText("Morning blend  ⌄");waitText("Sources");
+            // Finish Android's transient selection toast before preserving the design screenshot.
+            android.os.SystemClock.sleep(3500);screenshot("03-multi-playlist-mixer");
+            waitText("Save preset").click();UiObject2 name=device.wait(Until.findObject(By.clazz("android.widget.EditText")),3000);assertNotNull(name);name.setText("Morning blend");UiObject2 confirm=device.wait(Until.findObject(By.res("android:id/button1")),4000);assertNotNull("Missing preset confirmation",confirm);confirm.click();waitText("Morning blend  ⌄");waitText("Sources");
             assertEquals(1,library.entries(false).size());assertEquals(3,library.entries(false).get(0).config.sources.size());
             assertFalse(waitText("Load mix").isEnabled());assertFalse(device.hasObject(By.text("Start Mix")));
             waitText("History").click();waitText("No mixes yet");screenshot("04-empty-history");
