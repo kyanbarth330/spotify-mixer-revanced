@@ -2,13 +2,17 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.6](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38829565864/artifacts/12016592186)
+## [Download SpotEnhancer 0.7](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38840481620/artifacts/12021047862)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
 
-## Version 0.6 detection repair
+## Version 0.7 — themed screens and title fallback
 
-The 0.5 diagnostic screenshot confirmed a working panel/hook but showed Spotify page arguments stored in a Parcelable under `parameters`. Version 0.6 reads that verified contract, accepts only an unambiguous complete playlist identity and adds parameter type/field metadata to diagnostics without values. Six new regression tests cover the reader. Device confirmation of the actual parameter model is still pending.
+The installer and private enhancement screens now share a dark/green theme, rounded controls and cards, density-aware spacing and system-bar styling. Selection first uses explicit playlist title metadata, then one unambiguous accessibility heading inside the recognized playlist root. Ambiguous headings retain the honest `Selected playlist` fallback; actual Spotify title extraction still requires device confirmation.
+
+A pure `MixPlanner` now plans deterministic, deduplicated queues with ratio quotas and source-shortage fallback. It is tested independently and **not connected to Spotify track retrieval or playback**. There is no Start Mix control yet.
+
+The user confirmed selecting two distinct playlists in 0.6. See [virtual-device test scope and evidence](docs/EMULATOR_TESTS.md).
 
 ## Entirely inside Spotify
 
@@ -16,7 +20,7 @@ A fixed navigation row reserves space in Spotify's Activity content layout; it d
 
 For playlist selection: **SpotEnhancer → Playlist Mixer → Choose Playlist A/B** opens Spotify's own playlist library. Open a playlist and tap **Add to Mixer** in the in-app row to assign the chosen slot. There is no URL input, clipboard, share sheet, external shortcut or separate app workflow. All project labels are English.
 
-The contextual action is enabled only when the hook captures an unambiguous visible playlist identity. If it remains disabled, open **SpotEnhancer → Diagnostics** after visiting the playlist. The report shows hook counts/view types/argument key names, not playlist names or URLs. Device confirmation of 0.5's row and context detection is still pending. The user's 0.4 screenshot showed the previous contextual row missing; this is not claimed to have been proven fixed by a build.
+The contextual action is enabled only when the hook captures an unambiguous visible playlist identity. If it remains disabled, open **SpotEnhancer → Diagnostics** after visiting the playlist. The report shows hook counts/view types/argument key names, not playlist names or URLs. The user confirmed panel operation and two distinct selections in 0.6. The desired native playlist overflow-menu row is still pending; the fixed navigation row remains the current entry point.
 
 Playlist choices and ratio are saved. Actual playback/queue mixing is not implemented. The home screen is ready for additional enhancement features.
 

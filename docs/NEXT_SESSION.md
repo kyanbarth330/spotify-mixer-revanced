@@ -33,3 +33,13 @@ Do not publish original or patched Spotify APKs, private keys or proprietary dec
 ## Background work authorization
 
 The user explicitly asked to continue while they sleep and to test on a virtual device between changes. A one-time background continuation is scheduled for this project. Continue within the existing draft PR; do not merge. An Android 35 emulator workflow and original testhost were added: see docs/EMULATOR_TESTS.md and `.github/workflows/android-smoke.yml`. Check their latest results before proceeding, fix demonstrable failures, and record screenshots/results. The fixture tests only the original SpotEnhancer runtime and synthetic parameters; never describe it as a real Spotify/login/playback test. Never upload the proprietary APK to the public runner/artifacts.
+
+## Continuation on 2026-10-16
+
+Version 0.7 adds a shared resource-independent dark/green UI helper for installer/runtime, card-based playlist selections and rounded controls. Playlist titles use explicit metadata first, then a bounded scan for one unambiguous accessibility heading in a root with an already verified playlist identity. The synthetic fixture no longer supplies a title argument, so its two-playlist flow exercises the heading fallback. Real Spotify behavior is not inferred from this fixture.
+
+`engine/MixPlanner` is an original pure queue planner with ratio quotas, deterministic ordering, global deduplication, invalid-entry rejection and fallback when a source runs out. It does not retrieve tracks, determine Spotify availability or call playback. No fake Start Mix action was added.
+
+The first emulator run failed during ActivityScenario cleanup after navigation had replaced the initial Activity. Its Android Keystore signing test passed. The workflow also ran its EXIT trap in a separate shell before tests, losing screenshots. The test now launches the navigation task directly and the shell script keeps build/evidence collection in one shell. Subsequent results belong in EMULATOR_TESTS.md.
+
+The transient task workspace was reset before this continuation: the repository was cloned again, but the originally attached Spotify APK and local SDK/research files were no longer present. Do not search unrelated conversations/Library. Exact native overflow integration and deeper playlist title/track model inspection therefore remain blocked until the explicitly supplied APK is available again. Stable private CI signing material is also still unavailable; never commit a key as a workaround. Keep the PR draft.

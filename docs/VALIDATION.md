@@ -107,3 +107,15 @@ The old reader only considered direct String/Uri values under URI keys and neste
 Six new unit tests cover opaque Parcelable fields, inheritance, conflicting identities, duplicate/static fields, invalid data and diagnostics without value leakage. Together with four existing URI tests and four engine tests, this is 14 Java tests; the two Python parser tests also pass. The exact parameter object's class/values on the user's device remain unseen, so this is a targeted contract fix requiring device confirmation, not a claim that selection has been observed working.
 
 [Build 38829565864](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38829565864) succeeded with 14 Java tests and the final installer asset check. The downloaded `spotenhancer-installer` artifact (12016592186) contains two runtime DEX files and 26 runtime classes, including the new reader. The exact packaged runtime was used in another local patch/sign run: verification passed, 4,859 original entries were retained unchanged, all original class descriptors remain unique/present, and private Activity registration is valid. Runtime playlist recognition on the user's device remains pending.
+
+## Version 0.7 — continuation
+
+User evidence now confirms two distinct playlist selections in 0.6; the screen still showed generic titles. The 0.7 UI uses a shared original, resource-independent theme for both installer and injected runtime. The final installer checker now requires the shared theme and new title helper in the actual bundled payload, avoiding the earlier missing-class failure mode.
+
+Title fallback uses only explicit metadata or a single accessibility heading in an already recognized playlist root, bounded to 256 views/12 levels. Conflicting or truncated candidates are rejected. Tests use original synthetic headings; the actual Spotify UI hierarchy remains unverified.
+
+The original user APK is no longer present in this continuation's reset workspace. Consequently no new patch/sign/inventory run against Spotify can be claimed for 0.7. Earlier 0.6 integration evidence remains historical; current virtual-device tests use only original fixtures. No Spotify binary, proprietary decompiled source or private key is uploaded.
+
+The pure queue planner is a separate implementation step, not playback integration. Tests cover requested quotas and determinism, exhausted sources, cross-source duplicates/invalid entries, ratio endpoints, rounding, empty inputs and invalid ratios. Track retrieval, availability checks, native overflow integration, stable installer signing and actual Spotify playback remain pending.
+
+[0.7 build 38840481620](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38840481620) succeeded: 19 Java tests (9 engine, 10 runtime) and the final payload check. The downloaded installer artifact 12021047862 was checked again locally: 3 runtime DEX files, 27 runtime/UI classes including the required title/theme helpers. The two Python parser tests and whitespace/shell checks also pass. Android execution evidence is recorded separately in EMULATOR_TESTS.md.
