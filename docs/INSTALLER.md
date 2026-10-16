@@ -35,3 +35,7 @@ GitHub debug installer keys currently differ between builds. Removing the instal
 Playlist identity capture no longer rejects a valid playlist just because its fragment root is not a FrameLayout. Captured roots are held weakly, and only attached/shown roots are considered. Conflicting identities disable selection. URI values may be Strings or Android Uri objects; legacy Spotify user-playlist identities are normalized. Root classes/argument keys and resume counts are recorded in memory without playlist identities or names.
 
 The selection buttons persist the chosen slot and navigate to the verified `spotify:collection:playlists` route inside Spotify. A detected playlist can be assigned from the in-app navigation row. The Activity remains private. There are no external launcher/share aliases, share sheets or installer-based panel entry points.
+
+## Version 0.6 page parameters
+
+The observed `p.bnk0` page uses a Parcelable under `parameters`; `page_key` names a provider class. The context reader handles this explicit payload and only accepts one unambiguous complete playlist identity from its non-static fields or the verified `p.jh71.a` URI wrapper. Diagnostics include parameter type/field metadata when unsupported, without playlist values. Fixed in-app navigation and A/B selection remain unchanged.

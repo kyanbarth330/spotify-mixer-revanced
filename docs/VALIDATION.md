@@ -90,3 +90,20 @@ The final 0.5 implementation keeps all interaction inside Spotify: a fixed in-ap
 Four engine tests and four playlist identity tests pass locally. Two Python parser tests pass. The Spotify playlist-library route string was verified in the supplied APK. Actual in-app placement/context selection still requires device confirmation; selection is disabled if no unambiguous visible playlist identity is found.
 
 The final in-app-only [0.5 build 38828901876](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38828901876) succeeded. Its `spotenhancer-installer` artifact (12016326625) was downloaded and checked: two runtime DEX files, 25 original runtime classes and the required screen/context/diagnostic helpers. Local integration was repeated with this exact runtime and the current engine source. Patch/sign verification passed; 4,859 retained entries were unchanged. The output retained all 102,449 original class descriptors with no duplicates, registered one private SpotEnhancer Activity, and contained no external SpotEnhancer launcher/share aliases. These checks do not replace a device test of the navigation row or URI capture.
+
+## Version 0.6 — evidence from the 0.5 diagnostic screenshot
+
+The screenshot confirms that the in-app panel/diagnostics render and the fragment hook executes (25 resume calls). Its visible page fragment is `p.bnk0`, with root `p.s3g1` and argument keys `parameters`, `page_key`, and internal-referrer keys. No URI was recognized.
+
+Targeted source inspection of the supplied DEX confirms:
+
+- `p.qgc.a(Intent, p.jh71, p.o031)` writes the page provider's **class name** to `page_key` and a mapper-produced **Parcelable** to `parameters`.
+- `p.lso0.invoke()` reads `parameters` with `Bundle.getParcelable`.
+- `p.zof0.invoke()` reads `page_key` as a String for page-class lookup. It is not a playlist URI.
+- The Spotify URI wrapper `p.jh71.a` has type `android.net.Uri`.
+
+The old reader only considered direct String/Uri values under URI keys and nested Bundles, so it ignored this contract. Version 0.6 reads the explicit Parcelable page payload's non-static fields (at most 32), accepting only complete normalized playlist identities and the verified Spotify URI wrapper. It does not scan the Activity object graph, arbitrary collections, raw 22-character IDs or every string on screen. Multiple different candidates are rejected. Unrecognized parameters are described by class/field names and types in diagnostics, never their values. A stale context for the same view is cleared when extraction fails.
+
+Six new unit tests cover opaque Parcelable fields, inheritance, conflicting identities, duplicate/static fields, invalid data and diagnostics without value leakage. Together with four existing URI tests and four engine tests, this is 14 Java tests; the two Python parser tests also pass. The exact parameter object's class/values on the user's device remain unseen, so this is a targeted contract fix requiring device confirmation, not a claim that selection has been observed working.
+
+[Build 38829565864](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38829565864) succeeded with 14 Java tests and the final installer asset check. The downloaded `spotenhancer-installer` artifact (12016592186) contains two runtime DEX files and 26 runtime classes, including the new reader. The exact packaged runtime was used in another local patch/sign run: verification passed, 4,859 original entries were retained unchanged, all original class descriptors remain unique/present, and private Activity registration is valid. Runtime playlist recognition on the user's device remains pending.

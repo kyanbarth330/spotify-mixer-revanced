@@ -2,9 +2,13 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.5](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38828901876/artifacts/12016326625)
+## [Download SpotEnhancer 0.6](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38829565864/artifacts/12016592186)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
+
+## Version 0.6 detection repair
+
+The 0.5 diagnostic screenshot confirmed a working panel/hook but showed Spotify page arguments stored in a Parcelable under `parameters`. Version 0.6 reads that verified contract, accepts only an unambiguous complete playlist identity and adds parameter type/field metadata to diagnostics without values. Six new regression tests cover the reader. Device confirmation of the actual parameter model is still pending.
 
 ## Entirely inside Spotify
 
