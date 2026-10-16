@@ -16,6 +16,7 @@ public final class Mixer {
     private static final String ROW="spotenhancer-navigation";
     private static final WeakHashMap<View,java.lang.ref.WeakReference<Object>> contexts=new WeakHashMap<>();
     public static void attach(Activity activity) {
+        ThemeRuntime.attach(activity);
         activity.getWindow().getDecorView().post(() -> {
             try {
                 FrameLayout host=activity.findViewById(android.R.id.content);

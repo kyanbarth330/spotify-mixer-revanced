@@ -113,11 +113,14 @@ public final class Patcher {
         log.accept("[OK] Supported Spotify APK verified");
         List<byte[]> runtimeDex = validateRuntime(runtime,log);
         try (ZipFile zip = new ZipFile(input)) {
-            byte[] patched;
+            byte[] patched;byte[][] themed;
             byte[][] playlist;
             byte[] manifest;
             log.accept("[PATCH] classes.dex · playlist lifecycle + search client hooks");
             try (InputStream in = zip.getInputStream(zip.getEntry("classes.dex"))) { playlist = PlaylistHook.patch(read(in)); }
+            log.accept("[PATCH] classes4.dex · native Compose color conversion");
+            try(InputStream in=zip.getInputStream(zip.getEntry("classes4.dex"))){themed=ThemeHook.patch(read(in));}
+            playlist[1]=ThemeHook.merge(playlist[1],themed[1]);
             log.accept("[PATCH] AndroidManifest.xml · private SpotEnhancer Activity");
             try (InputStream in = zip.getInputStream(zip.getEntry("AndroidManifest.xml"))) { manifest = ManifestEditor.addActivity(read(in)); }
             log.accept("[PATCH] classes2.dex · Activity + native playlist/player services");
@@ -136,6 +139,7 @@ public final class Patcher {
                     if (name.equals("stamp-cert-sha256")) continue;
                     if (name.equals("classes.dex")) { put(out, name, playlist[0]); log.accept("[OK] classes.dex patched"); continue; }
                     if (name.equals("AndroidManifest.xml")) { put(out, name, manifest); log.accept("[OK] AndroidManifest.xml patched"); continue; }
+                    if (name.equals("classes4.dex")) {put(out,name,themed[0]);log.accept("[OK] classes4.dex theme hook relocated");continue;}
                     if (name.equals("classes2.dex")) { put(out, name, patched); log.accept("[OK] classes2.dex patched"); continue; }
                     ZipEntry entry = new ZipEntry(name); entry.setTime(315532800000L);
                     if (old.getMethod() == ZipEntry.STORED) {

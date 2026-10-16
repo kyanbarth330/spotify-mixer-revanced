@@ -6,13 +6,19 @@ An independent local Android installer for the exact user-supplied Spotify 9.1.9
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
 
+## Version 0.15 — Theme Studio (validation in progress)
+
+Green wrench -> Theme Studio -> Enable themes. Preview and apply **AMOLED Green, Midnight Ocean, Velvet Purple, Rose Gold or Arctic Mint**. The selected preset is saved and affects native Compose UI colors, supported traditional Android views, system bars and SpotEnhancer. Reopen Spotify screen refreshes the main Activity; restart Spotify if a cached screen still has old colors. Restore Spotify defaults disables theming and restores tracked view properties without clearing app data.
+
+These are global **color presets**, not layout/font replacements. Artwork and video data are not recolored. Arbitrary stateful selectors/custom canvases/gradients and some dialogs can retain original styling. Supported input stays pinned to 9.1.90.2270. See [theme scope](docs/THEMING.md). Existing 0.14 build link above remains until 0.15 verification finishes.
+
 ## Version 0.14 — experimental native Playlist Creator
 
 Open the green wrench -> Playlist Creator, enable it, and enter a name, genres/artists or search keywords and a requested track count (1–500). Open a normal Spotify playlist once and choose Refresh connection if services are waiting. Generate preview retrieves real Spotify search results with titles/artists; it is keyword search, not an AI model. Comma-separated artists/genres become up to 12 search combinations. Review/remove tracks, then confirm Create Playlist. Names use `SpotEnhancer-{name}`. Nothing autoplays.
 
 The native creation request is followed by a full readback of name, count and track order. Failure or timeout keeps an unfinished-request record, blocks another write and offers read-only verification. Clear it only after checking your Spotify library; an unconfirmed request may already have created a playlist. No automatic write retries or automatic deletion. The feature switch defaults off and draft settings persist.
 
-This is a new experimental integration with locally verified contracts and own-code protocol tests, **not confirmed account-side success**. Spotify server permissions/restrictions are respected. Supported input remains the exact **9.1.90.2270** APK; the supplied 9.1.92 APK is not yet supported. See [creator behavior and validation](docs/PLAYLIST_CREATOR.md). [0.14 build](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38912224596) and [own Android test evidence](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38912224614/artifacts/12050808096) pass; these do not establish live account-side creation.
+This is a new experimental integration with locally verified contracts and own-code protocol tests, **now confirmed working by the user on their logged-in device**. Spotify server permissions/restrictions are respected. Supported input remains the exact **9.1.90.2270** APK; the supplied 9.1.92 APK is not yet supported. See [creator behavior and validation](docs/PLAYLIST_CREATOR.md). [0.14 build](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38912224596) and [own Android test evidence](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38912224614/artifacts/12050808096) pass; these do not establish live account-side creation.
 
 ## Version 0.13 development — Playlist Creator foundation
 

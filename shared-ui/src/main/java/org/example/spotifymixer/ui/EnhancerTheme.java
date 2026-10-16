@@ -10,7 +10,7 @@ import android.widget.*;
 
 /** Resource-independent styling: the same original UI is also injected as DEX. */
 public final class EnhancerTheme {
-    public static final int BACKGROUND=0xff0c0f0d, SURFACE=0xff1b211d, GREEN=0xff1ed760, MUTED=0xffb3b3b3;
+    public static int BACKGROUND=0xff0c0f0d, SURFACE=0xff1b211d, GREEN=0xff1ed760, MUTED=0xffb3b3b3;
     private EnhancerTheme(){}
     public static int dp(Context c,int value){return Math.round(value*c.getResources().getDisplayMetrics().density);}
     public static void window(Activity a){a.getWindow().setStatusBarColor(BACKGROUND);a.getWindow().setNavigationBarColor(BACKGROUND);a.getWindow().getDecorView().setSystemUiVisibility(0);}

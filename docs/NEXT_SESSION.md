@@ -1,6 +1,16 @@
 # SpotEnhancer — next session
 
-## Current work: 0.14 native Playlist Creator
+## Current work: 0.15 Theme Studio
+
+User explicitly confirmed Playlist Creator works on their logged-in device, then requested global theming with presets. Current scope is Theme Studio only, not the other enhancement backlog. Creator and mixer stay functional.
+
+Theme Studio has a default-off persisted switch, five original dark palettes (AMOLED Green, Midnight Ocean, Velvet Purple, Rose Gold, Arctic Mint), preview, Apply, reopen screen and Restore defaults. Runtime maps neutral/Spotify-green UI colors preserving alpha and unrelated hues. Native Compose path is the verified p.k5k1.K(J)I ARGB conversion. ThemeHook relocates its complete class from full classes4.dex into the existing appended native-hook DEX with av10/RetrofitMaker. Local actual rewrite: classes4 65,470 refs, merged hook DEX 486 refs. All old classes must remain unique/present.
+
+ThemeRuntime loads preferences from the existing MainActivity resume hook and observes subsequent Activities with lifecycle callbacks. A throttled/bounded layout pass styles solid/gradient view backgrounds, nonstateful text/background/icon tints and system bars; it leaves image/bitmap data and arbitrary stateful selectors alone. Original properties are restored only if still owned by the theme, avoiding clobbering recycled-view native updates. No bitmap filters, system overlay permission, network or automatic process kill. Reopen screens/restart Spotify may be needed for cached colors. This is global color theming, not a wholesale layout/font replacement; custom canvas/gradient/dialog coverage is not universal.
+
+51 local engine/core tests pass, including contrast/idempotence/alpha, actual return-register hook/relocation and previous creator/mixer regressions. Own Android fixture tests added for preset UI, native-view recolor/restore, artwork unchanged, and process-stop preference persistence. CI/delivered-payload verification pending. Do not claim native Spotify visual coverage from own fixture screenshots.
+
+## Retained 0.14 native Playlist Creator
 
 User restricted current work to Playlist Creator only. Original pinned 9.1.90 APK was reattached and SHA validated; a newer 9.1.92 APK was also supplied but **is not supported** by the exact-input patcher. Do not silently accept it or claim equivalent obfuscated contracts. No other enhancement has shipped.
 
@@ -10,7 +20,7 @@ Search uses the existing p.sy11 API, searchview/v3/search, with native query par
 
 Creation sends one RootlistModificationService.Modify request (operation=create, before=start, playlist=true, name and URI list). An acknowledged URI alone is insufficient: NativeBridge reads the new playlist and checks title, count and complete ordered list. Pending operation/name/URIs and acknowledged identity are committed before/after the single write; failed/uncertain requests block new generation across process restart. UI can verify by reads only, or clear the record after explicit check-Spotify acknowledgement (never deletes a playlist). Reads retry at most three times; writes never auto-retry. Already dispatched writes cannot be cancelled by leaving the panel. Private operation state is device-local.
 
-46 local engine/core tests pass. Local metadata validation asserts 20 creator wire fields plus the previous 25 playlist fields and required methods; real hook rewrite preserves both relocated classes. Final source 4d2d94d passes build 38912224596 (installer 12051395202) and own Android35 run 38912224614 (evidence 12050808096: 11 executed tests, 0 failures/errors; separate persistence phases pass). Exact downloaded payload passes private patch/sign/full-original-class inventory checks; see VALIDATION.md. Live Spotify account-side creation is still unverified. Own protocol doubles exercise the actual reflection adapter but cannot prove Spotify server/account behavior. Keep PR #1 draft and never publish proprietary APKs, decompiled code or keys.
+46 local engine/core tests pass. Local metadata validation asserts 20 creator wire fields plus the previous 25 playlist fields and required methods; real hook rewrite preserves both relocated classes. Final source 4d2d94d passes build 38912224596 (installer 12051395202) and own Android35 run 38912224614 (evidence 12050808096: 11 executed tests, 0 failures/errors; separate persistence phases pass). Exact downloaded payload passes private patch/sign/full-original-class inventory checks; see VALIDATION.md. User has now confirmed native Playlist Creator works on their logged-in device (after the 0.14 delivery). Own protocol doubles exercise the actual reflection adapter but cannot prove Spotify server/account behavior. Keep PR #1 draft and never publish proprietary APKs, decompiled code or keys.
 
 Backlog (not current scope): every other selected enhancement from the conversation, each with independent default-off toggle. Existing 0.12 mixer is retained.
 

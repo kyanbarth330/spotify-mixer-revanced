@@ -18,7 +18,7 @@ public class LocalValidation {
             Enumeration<? extends ZipEntry> e=before.entries();
             while(e.hasMoreElements()) {
                 ZipEntry item=e.nextElement();String n=item.getName();
-                if(n.equals("classes.dex") || n.equals("AndroidManifest.xml") || n.equals("classes2.dex") || n.startsWith("META-INF/") || n.equals("stamp-cert-sha256")) continue;
+                if(n.equals("classes.dex") || n.equals("AndroidManifest.xml") || n.equals("classes2.dex") || n.equals("classes4.dex") || n.startsWith("META-INF/") || n.equals("stamp-cert-sha256")) continue;
                 try(InputStream a=before.getInputStream(item);InputStream b=after.getInputStream(after.getEntry(n))) {
                     MessageDigest md=MessageDigest.getInstance("SHA-256");
                     if(!Arrays.equals(digest(a,md),digest(b,md))) throw new AssertionError("Changed: "+n);
