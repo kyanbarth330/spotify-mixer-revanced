@@ -8,7 +8,7 @@ Playlist Creator now has a persisted, default-off toggle and an English in-app d
 
 The other selected enhancements are a backlog, not implemented: custom-minute sleep timer, exact-ID duplicate scan, Cinema Player, Find in Playlists, Live Artwork, Rediscover, AMOLED, Compact Lists, Queue Search/Undo, Clean Share, Volume Steps, headphone Playback Rules, Session Guard, Quick Search, Seek Buttons, Confirm Queue Clear, Always Show Track Info, Start Page, No Accidental Skip, Settings Profiles. All future features need their own persisted default-off toggle and truthful availability. Prior uncommitted timer/audit work was lost with the workspace reset; do not claim it shipped.
 
-Build/emulator evidence for 0.13 is pending; append actual results after completed runs. Keep PR #1 draft, merge nothing.
+Functional source 67b85c4 passes build 38908816863 (own installer artifact 12049900391) and Android 35 run 38908817109 (evidence 12049676999, 10 executed tests/0 failures). Screenshot inspection prompted a final explicit dark input-background correction; see VALIDATION.md for exact evidence scope. Keep PR #1 draft, merge nothing.
 
 ## Retained state: 0.12
 
