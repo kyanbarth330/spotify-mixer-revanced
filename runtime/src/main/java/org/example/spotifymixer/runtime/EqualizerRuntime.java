@@ -50,7 +50,7 @@ public final class EqualizerRuntime {
         public int minimum(){return eq.getBandLevelRange()[0];}
         public int maximum(){return eq.getBandLevelRange()[1];}
         public boolean hasControl(){return eq.hasControl();}
-        public void level(int band,int value){check(eq.setBandLevel((short)band,(short)value));}
+        public void level(int band,int value){eq.setBandLevel((short)band,(short)value);}
         public void enabled(boolean value){check(eq.setEnabled(value));}
         private static void check(int result){if(result!=AudioEffect.SUCCESS)throw new IllegalStateException("Audio effect rejected request ("+result+")");}
         public void release(){eq.release();}
