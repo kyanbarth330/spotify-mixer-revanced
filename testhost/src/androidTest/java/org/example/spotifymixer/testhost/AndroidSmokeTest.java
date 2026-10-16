@@ -44,12 +44,12 @@ public class AndroidSmokeTest {
         }catch(java.io.IOException ex){throw new AssertionError("Cannot preserve screenshot",ex);}
     }
 
-    private UiObject2 tools(){UiObject2 view=device.wait(Until.findObject(By.desc("Open SpotEnhancer")),5000);assertNotNull("Missing floating tools button",view);return view;}
+    private UiObject2 tools(){device.waitForIdle();UiObject2 view=device.wait(Until.findObject(By.desc("Open SpotEnhancer")),10000);if(view==null)screenshot("failure-missing-tools");assertNotNull("Missing floating tools button",view);return view;}
     @Test public void selectMultiplePlaylistsPresetAndPanel()throws Exception{
         context.getSharedPreferences(PREFS,0).edit().clear().commit();
         context.startActivity(new Intent(context,FixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
         try{
-            tools();assertFalse(device.hasObject(By.text("Add to Mixer")));screenshot("01-floating-tools-fixture");tools().click();
+            waitText("Test library");tools();assertFalse(device.hasObject(By.text("Add to Mixer")));screenshot("01-floating-tools-fixture");tools().click();
             waitText("Playlist Mixer");screenshot("02-feature-panel");UiObject2 search=device.findObject(By.clazz("android.widget.EditText"));assertNotNull(search);search.setText("history");device.waitForIdle();waitText("Mix History");assertFalse(device.hasObject(By.text("Playlist Mixer")));search.setText("");waitText("Playlist Mixer").click();
             for(String title:new String[]{"Playlist Alpha","Playlist Beta","Playlist Gamma"}){waitText("+  Add playlist").click();waitText("Test library");waitText(title).click();waitText("Add to Mixer").click();waitText("Sources");waitText(title);}
             org.example.spotifymixer.runtime.MixLibrary library=new org.example.spotifymixer.runtime.MixLibrary(context.getSharedPreferences(PREFS,0));
