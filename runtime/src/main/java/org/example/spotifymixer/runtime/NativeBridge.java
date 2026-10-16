@@ -19,10 +19,9 @@ public final class NativeBridge implements MixSession.Backend {
         Class<?> base=type(loader,"com.spotify.esperanto.esperanto.CoroutineClientBase");Field tf=base.getDeclaredField("transport");tf.setAccessible(true);Object transport=tf.get(client);
         Class<?> continuation=type(loader,"p.uel"),transportApi=type(loader,"com.spotify.esperanto.esperanto.CoroutineTransport");
         Method call=transportApi.getMethod("callSingle",String.class,String.class,byte[].class,continuation);
-        List<String> tracks=new ArrayList<>();String title="";int offset=0,total=-1;long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(90);
-        while(offset<10000){
+        List<String> tracks=new ArrayList<>();String title="";int offset=0,total=-1;
+        while(true){
             if(Thread.currentThread().isInterrupted())throw new InterruptedException();
-            long remaining=deadline-System.nanoTime();if(remaining<=0)throw new IOException("Playlist loading timed out; try again");
             CountDownLatch done=new CountDownLatch(1);AtomicReference<Object> result=new AtomicReference<>();
             Object callback=Proxy.newProxyInstance(loader,new Class<?>[]{continuation},(proxy,method,args)->{
                 switch(method.getName()){
@@ -38,7 +37,7 @@ public final class NativeBridge implements MixSession.Backend {
             Object immediate=invoke(call,transport,"spotify.playlist_esperanto.proto.PlaylistDataService","Get",PlaylistWire.request(uri,offset,100),callback);
             Object value=immediate;
             if(!(value instanceof byte[])){
-                if(!done.await(Math.min(remaining,TimeUnit.SECONDS.toNanos(30)),TimeUnit.NANOSECONDS))throw new IOException("Playlist service timed out; try again");value=result.get();
+                if(!done.await(TimeUnit.SECONDS.toNanos(30),TimeUnit.NANOSECONDS))throw new IOException("Playlist service timed out; try again");value=result.get();
             }
             if(!(value instanceof byte[])){
                 // This is the same Kotlin Result failure check used by the original callers.
@@ -49,11 +48,10 @@ public final class NativeBridge implements MixSession.Backend {
             if(page.loading)throw new IOException("Spotify is still loading this playlist; try again");
             if(total>=0&&page.total>=0&&total!=page.total)throw new IOException("Playlist changed while loading; try again");
             if(page.total>=0)total=page.total;
-            if(total>10000)throw new IOException("Playlists above 10,000 items are not supported");
             if(!page.title.isEmpty())title=page.title;tracks.addAll(page.tracks);offset+=page.rows;
             if(total>=0&&offset>=total)break;
             if(page.rows<100){if(total>offset)throw new IOException("Incomplete playlist response; try again");break;}
-            if(offset>=10000)throw new IOException("Playlist size limit reached before completion");
+            if(offset>Integer.MAX_VALUE-100)throw new IOException("Playlist offset overflow");
         }
         return new MixSession.Playlist(title,tracks);
     }

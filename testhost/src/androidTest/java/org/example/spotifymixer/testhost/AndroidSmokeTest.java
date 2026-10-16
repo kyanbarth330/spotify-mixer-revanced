@@ -42,38 +42,27 @@ public class AndroidSmokeTest {
         }catch(java.io.IOException ex){throw new AssertionError("Cannot preserve screenshot",ex);}
     }
 
-    @Test public void selectTwoPlaylistsAndNavigateBack()throws Exception{
+    private UiObject2 tools(){UiObject2 view=device.wait(Until.findObject(By.desc("Open SpotEnhancer")),5000);assertNotNull("Missing floating tools button",view);return view;}
+    @Test public void selectMultiplePlaylistsPresetAndPanel()throws Exception{
         context.getSharedPreferences(PREFS,0).edit().clear().commit();
         context.startActivity(new Intent(context,FixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
         try{
-            waitText("SpotEnhancer");screenshot("01-native-entry-fixture");
-            waitText("SpotEnhancer").click();waitText("Playlist Mixer");screenshot("02-spotenhancer-home");
-            waitText("Playlist Mixer").click();waitText("Choose Playlist A").click();
-            waitText("Test library");waitText("Playlist Alpha").click();
-            UiObject2 add=waitText("Add to Mixer");assertTrue(device.wait(Until.hasObject(By.text("Add to Mixer").enabled(true)),10000));add.click();
-            waitText("Playlist Mixer").click();waitText("Choose Playlist B").click();
-            waitText("Test library");waitText("Playlist Beta").click();
-            assertTrue(device.wait(Until.hasObject(By.text("Add to Mixer").enabled(true)),10000));waitText("Add to Mixer").click();
-            waitText("Playlist Mixer").click();waitText("Playlist Alpha");waitText("Playlist Beta");
-            UiObject2 slider=device.findObject(By.clazz("android.widget.SeekBar"));assertNotNull(slider);Rect bounds=slider.getVisibleBounds();device.click(bounds.left+bounds.width()*2/5,bounds.centerY());device.waitForIdle();
-            waitText("Shuffle mix").click();assertTrue(device.wait(Until.hasObject(By.text("Shuffle mix").checked(true)),4000));device.waitForIdle();assertTrue(context.getSharedPreferences(PREFS,0).getBoolean("shuffle",false));
-            assertNotEquals(70,context.getSharedPreferences(PREFS,0).getInt("ratio",70));
-            assertEquals("Playlist Alpha",context.getSharedPreferences(PREFS,0).getString("a_title",null));
-            assertEquals("Playlist Beta",context.getSharedPreferences(PREFS,0).getString("b_title",null));
-            assertEquals("spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",context.getSharedPreferences(PREFS,0).getString("a",null));
-            assertEquals("spotify:playlist:37i9dQZF1DX0XUsuxWHRQd",context.getSharedPreferences(PREFS,0).getString("b",null));
-            assertFalse(waitText("Load mix").isEnabled());
-            assertFalse(waitText("Start Mix").isEnabled());
-            screenshot("03-playlist-mixer-two-selections");
-            waitText("Choose Playlist A").click();waitText("Playlist Gamma").click();waitText("Add to Mixer").click();
-            waitText("Playlist Mixer").click();waitText("Choose Playlist B").click();waitText("Playlist Delta").click();waitText("Add to Mixer").click();
-            waitText("Playlist Mixer").click();waitText("Playlist Gamma");waitText("Playlist Delta");
-            assertEquals("spotify:playlist:0000000000000000000001",context.getSharedPreferences(PREFS,0).getString("a",null));
-            assertEquals("spotify:playlist:0000000000000000000002",context.getSharedPreferences(PREFS,0).getString("b",null));
-            assertTrue(context.getSharedPreferences(PREFS,0).getBoolean("shuffle",false));
-            screenshot("08-replaced-playlists-shuffle");
-            waitText("Back to SpotEnhancer").click();waitText("Diagnostics").click();waitText("Diagnostics");assertNotNull(device.findObject(By.textContains("keys=[")));screenshot("04-diagnostics");
-            waitText("Back to Spotify").click();waitText("Playlist Delta");waitText("SpotEnhancer");screenshot("05-return-to-fixture");
+            tools();assertFalse(device.hasObject(By.text("Add to Mixer")));screenshot("01-floating-tools-fixture");tools().click();
+            waitText("Playlist Mixer");screenshot("02-feature-panel");waitText("Playlist Mixer").click();
+            for(String title:new String[]{"Playlist Alpha","Playlist Beta","Playlist Gamma"}){waitText("+  Add playlist").click();waitText("Test library");waitText(title).click();tools().click();waitText(title);}
+            org.example.spotifymixer.runtime.MixLibrary library=new org.example.spotifymixer.runtime.MixLibrary(context.getSharedPreferences(PREFS,0));
+            assertEquals(3,library.active().sources.size());
+            UiObject2 slider=device.findObject(By.desc("Weight for Playlist Alpha"));assertNotNull(slider);Rect bounds=slider.getVisibleBounds();device.click(bounds.left+bounds.width()/2,bounds.centerY());device.waitForIdle();
+            assertEquals(100,library.active().sources.stream().mapToInt(source->source.weight).sum());
+            waitText("Shuffle mix").click();assertTrue(device.wait(Until.hasObject(By.text("Shuffle mix").checked(true)),4000));device.waitForIdle();assertTrue(library.active().shuffle);
+            screenshot("03-multi-playlist-mixer");
+            waitText("Save preset").click();UiObject2 name=device.wait(Until.findObject(By.clazz("android.widget.EditText")),3000);assertNotNull(name);name.setText("Morning blend");waitText("Save").click();waitText("Sources");
+            assertEquals(1,library.entries(false).size());assertEquals(3,library.entries(false).get(0).config.sources.size());
+            assertFalse(waitText("Load mix").isEnabled());assertFalse(waitText("Start Mix").isEnabled());
+            waitText("History").click();waitText("No mixes yet");screenshot("04-empty-history");
+            device.findObject(By.desc("Back to SpotEnhancer")).click();waitText("Mix Presets").click();waitText("Morning blend");screenshot("05-saved-presets");
+            waitText("Use preset").click();waitText("Playlist Alpha");waitText("Playlist Gamma");
+            waitText("‹  Back to Spotify").click();waitText("Playlist Gamma");tools();
         }finally{device.pressHome();}
     }
     @Test public void reusedFragmentReadsReplacementArguments()throws Exception{
@@ -89,15 +78,22 @@ public class AndroidSmokeTest {
             }catch(ReflectiveOperationException error){throw new AssertionError(error);}});
         }
     }
-    @Test public void resumedMixerRefreshesReplacedSelections(){
-        context.getSharedPreferences(PREFS,0).edit().clear().putString("a","spotify:playlist:37i9dQZF1DXcBWIGoYBM5M").putString("a_title","Playlist Alpha").putString("b","spotify:playlist:37i9dQZF1DX0XUsuxWHRQd").putString("b_title","Playlist Beta").commit();
-        try(androidx.test.core.app.ActivityScenario<org.example.spotifymixer.runtime.SpotEnhancerActivity> scenario=androidx.test.core.app.ActivityScenario.launch(org.example.spotifymixer.runtime.SpotEnhancerActivity.class)){
-            waitText("Playlist Mixer").click();waitText("Playlist Alpha");
-            scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);
-            context.getSharedPreferences(PREFS,0).edit().putString("a","spotify:playlist:0000000000000000000001").putString("a_title","Playlist Gamma").putString("b","spotify:playlist:0000000000000000000002").putString("b_title","Playlist Delta").commit();
-            scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);
+    @Test public void resumedMixerRefreshesReplacedSelections()throws Exception{
+        android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);prefs.edit().clear().commit();org.example.spotifymixer.runtime.MixLibrary library=new org.example.spotifymixer.runtime.MixLibrary(prefs);
+        library.select(0,"spotify:playlist:0000000000000000000001","Playlist Alpha");library.select(1,"spotify:playlist:0000000000000000000002","Playlist Beta");
+        Intent intent=new Intent(context,org.example.spotifymixer.runtime.SpotEnhancerActivity.class).putExtra("screen","mixer");
+        try(androidx.test.core.app.ActivityScenario<org.example.spotifymixer.runtime.SpotEnhancerActivity> scenario=androidx.test.core.app.ActivityScenario.launch(intent)){
+            waitText("Playlist Alpha");scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);
+            library.select(0,"spotify:playlist:0000000000000000000003","Playlist Gamma");library.select(1,"spotify:playlist:0000000000000000000004","Playlist Delta");scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);
             waitText("Playlist Gamma");waitText("Playlist Delta");assertFalse(waitText("Start Mix").isEnabled());
         }
+    }
+    @Test public void libraryMigrationPresetsHistoryAndCorruption()throws Exception{
+        android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);prefs.edit().clear().putString("a","spotify:playlist:0000000000000000000001").putString("a_title","Alpha").putString("b","spotify:playlist:0000000000000000000002").putString("b_title","Beta").putInt("ratio",70).commit();
+        org.example.spotifymixer.runtime.MixLibrary library=new org.example.spotifymixer.runtime.MixLibrary(prefs);org.example.spotifymixer.runtime.MixConfig config=library.active();assertEquals(70,config.sources.get(0).weight);assertEquals(2,config.sources.size());library.save(config);
+        library.add("Fixture preset",config,false,0);library.add("Fixture accepted request",config,true,250);assertEquals(250,library.entries(true).get(0).tracks);assertEquals(2,library.entries(false).get(0).config.sources.size());
+        context.startActivity(new Intent(context,org.example.spotifymixer.runtime.SpotEnhancerActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));waitText("Mix History").click();waitText("Fixture accepted request");screenshot("08-history-fixture-entry");device.pressHome();
+        library.delete(library.entries(false).get(0).id,false);assertTrue(library.entries(false).isEmpty());prefs.edit().putString("active_v2","broken").commit();try{library.active();fail();}catch(java.io.IOException expected){}assertEquals("broken",prefs.getString("active_v2",null));prefs.edit().clear().commit();
     }
     @Test public void rejectsAmbiguousHeadings(){
         try(androidx.test.core.app.ActivityScenario<FixtureActivity> scenario=androidx.test.core.app.ActivityScenario.launch(FixtureActivity.class)){

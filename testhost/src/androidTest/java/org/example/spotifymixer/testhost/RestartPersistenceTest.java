@@ -15,18 +15,15 @@ public class RestartPersistenceTest {
         Assume.assumeTrue("Run explicitly in write/read phases",phase!=null);
         Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
         SharedPreferences prefs=context.getSharedPreferences("spotify-mixer-entry-v1",0);
-        if("write".equals(phase)){
-            prefs.edit().clear().putString("a","spotify:playlist:37i9dQZF1DXcBWIGoYBM5M").putString("b","spotify:playlist:37i9dQZF1DX0XUsuxWHRQd").commit();
-            assertTrue(prefs.edit().putBoolean("shuffle",true).putInt("ratio",40).commit());
-            assertTrue(org.example.spotifymixer.runtime.MixerPreferences.select(prefs,"a","spotify:playlist:0000000000000000000001","Playlist Gamma"));
-            assertTrue(org.example.spotifymixer.runtime.MixerPreferences.select(prefs,"b","spotify:playlist:0000000000000000000002","Playlist Delta"));
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
-        }else{
-            assertEquals("read",phase);
-            assertEquals("spotify:playlist:0000000000000000000001",prefs.getString("a",null));
-            assertEquals("spotify:playlist:0000000000000000000002",prefs.getString("b",null));
-            assertEquals("Playlist Gamma",prefs.getString("a_title",null));assertEquals("Playlist Delta",prefs.getString("b_title",null));
-            assertEquals(40,prefs.getInt("ratio",0));assertTrue(prefs.getBoolean("shuffle",false));
-        }
+        org.example.spotifymixer.runtime.MixLibrary library=new org.example.spotifymixer.runtime.MixLibrary(prefs);
+        try{
+            if("write".equals(phase)){
+                prefs.edit().clear().commit();library.select(0,"spotify:playlist:0000000000000000000001","Gamma");library.select(1,"spotify:playlist:0000000000000000000002","Delta");library.select(2,"spotify:playlist:0000000000000000000003","Indie");
+                org.example.spotifymixer.runtime.MixConfig config=new org.example.spotifymixer.runtime.MixConfig(library.active().sources,true).balance(0,50);library.save(config);library.add("Restart preset",config,false,0);library.add("Restart fixture history",config,true,12501);
+                InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            }else{
+                assertEquals("read",phase);org.example.spotifymixer.runtime.MixConfig config=library.active();assertEquals(3,config.sources.size());assertEquals("Gamma",config.sources.get(0).title);assertEquals("spotify:playlist:0000000000000000000002",config.sources.get(1).uri);assertEquals(50,config.sources.get(0).weight);assertTrue(config.shuffle);assertEquals(3,library.entries(false).get(0).config.sources.size());assertEquals(12501,library.entries(true).get(0).tracks);
+            }
+        }catch(java.io.IOException error){throw new AssertionError(error);}
     }
 }

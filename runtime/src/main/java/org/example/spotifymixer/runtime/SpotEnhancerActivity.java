@@ -1,113 +1,86 @@
 package org.example.spotifymixer.runtime;
 
-import android.app.Activity;
-import org.example.spotifymixer.ui.EnhancerTheme;
-import android.content.Intent;
-import android.os.*;
-import android.graphics.Color;
-import android.content.SharedPreferences;
-import android.view.*;
-import android.widget.*;
+import android.app.*;import android.content.*;import android.os.*;import android.view.*;import android.widget.*;import android.text.*;import org.example.spotifymixer.ui.*;import java.util.*;
 
-/** Dedicated private screen with a normal Activity back stack, ready for more features. */
+/** In-app translucent tools panel. No system overlay permission and no external selection route. */
 public final class SpotEnhancerActivity extends Activity {
-    private boolean mixer;
-    private int generation;
-    private final MixSession session=new MixSession(new NativeBridge());
-    private String pending,title;
-    private SharedPreferences prefs;
-    private String shownSelection;
-    private String selectionSignature(){return prefs.getString("a","")+"|"+prefs.getString("b","")+"|"+prefs.getInt("ratio",70)+"|"+prefs.getBoolean("shuffle",false);}
-    protected void onResume(){super.onResume();if(mixer&&shownSelection!=null&&!shownSelection.equals(selectionSignature()))showMixer();}
+    private SharedPreferences prefs;private MixLibrary library;private MixConfig draft;private String contextUri,contextTitle,screen="home",shown,category="All",query="",presetName="Custom mix";
+    private final MixSession session=new MixSession(new NativeBridge());private MixSession.Prepared prepared;private int generation;private boolean busy;
+    private Button load,start;private TextView status;private final List<View> controls=new ArrayList<>();
     public void onCreate(Bundle state){
-        setTheme(android.R.style.Theme_Material_NoActionBar);super.onCreate(state);
-        prefs=getSharedPreferences(Mixer.PREFS,0);
-        pending=PlaylistUri.normalize(getIntent().getStringExtra("playlist"));
-        title=getIntent().getStringExtra("title");
-        if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0,() -> back());
-        if(pending!=null || state!=null && state.getBoolean("mixer"))showMixer();else home();
+        setTheme(android.R.style.Theme_Translucent_NoTitleBar);super.onCreate(state);getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN|WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);prefs=getSharedPreferences(Mixer.PREFS,0);library=new MixLibrary(prefs);
+        contextUri=PlaylistUri.normalize(getIntent().getStringExtra("playlist"));contextTitle=getIntent().getStringExtra("title");
+        if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0,this::back);
+        String route=state==null?getIntent().getStringExtra("screen"):state.getString("screen");
+        try{draft=library.active();}catch(Exception e){failure(e);draft=new MixConfig(Collections.emptyList(),false);}
+        if("mixer".equals(route))mixer();else home();
     }
-    protected void onSaveInstanceState(Bundle out){out.putBoolean("mixer",mixer);super.onSaveInstanceState(out);}
+    protected void onSaveInstanceState(Bundle out){out.putString("screen",screen);super.onSaveInstanceState(out);}
+    protected void onResume(){super.onResume();if(library!=null&&shown!=null&&!shown.equals(library.signature())){try{draft=library.active();if("mixer".equals(screen))mixer();}catch(Exception e){failure(e);}}}
+    protected void onDestroy(){session.invalidate();super.onDestroy();}
     public void onBackPressed(){back();}
-    private void back(){if(mixer && pending==null)home();else finish();}
-    private LinearLayout page(String heading,String back,Runnable action){
-        LinearLayout box=EnhancerTheme.page(this,heading);
-        EnhancerTheme.button(box,back,false,action);return box;
+    private void back(){if(!screen.equals("home"))home();else returnToSpotify();}
+    private LinearLayout page(String title,String route){generation++;session.invalidate();prepared=null;busy=false;screen=route;controls.clear();shown=library.signature();return EnhancerPanel.page(this,title,route.equals("home"),this::home,this::returnToSpotify);}
+    private TextView text(LinearLayout parent,String value,int size,boolean bold){return EnhancerPanel.label(parent,value,size,EnhancerPanel.WHITE,bold);}
+    private TextView muted(LinearLayout parent,String value){return EnhancerPanel.label(parent,value,12,EnhancerPanel.MUTED,false);}
+    private Button button(LinearLayout parent,String title,boolean primary,Runnable action){return EnhancerPanel.button(parent,title,primary,action);}
+    private void failure(Exception e){Toast.makeText(this,error(e),Toast.LENGTH_LONG).show();}
+    private static String error(Exception e){Throwable t=e;while(t.getCause()!=null)t=t.getCause();return t.getMessage()==null?t.getClass().getSimpleName():t.getMessage();}
+    private boolean persist(){try{library.save(draft);shown=library.signature();prepared=null;session.invalidate();if(start!=null)start.setEnabled(false);return true;}catch(Exception e){failure(e);return false;}}
+    private void home(){
+        LinearLayout body=page("SpotEnhancer","home");TextView brand=text(body,"SpotEnhancer",30,true);android.text.SpannableString styled=new android.text.SpannableString("SpotEnhancer");styled.setSpan(new android.text.style.ForegroundColorSpan(EnhancerPanel.GREEN),4,12,0);brand.setText(styled);muted(body,"Make it yours");
+        EditText search=new EditText(this);search.setSingleLine(true);search.setTextColor(EnhancerPanel.WHITE);search.setTextSize(14);search.setHintTextColor(EnhancerPanel.MUTED);search.setHint("Search features");search.setBackground(EnhancerPanel.surface(EnhancerPanel.CARD,14,this,true));search.setPadding(dp(14),0,dp(14),0);search.setCompoundDrawablesWithIntrinsicBounds(null,null,null,null);LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,dp(46));sp.topMargin=dp(16);sp.bottomMargin=dp(12);body.addView(search,sp);
+        HorizontalScrollView categories=new HorizontalScrollView(this);categories.setHorizontalScrollBarEnabled(false);LinearLayout tabs=new LinearLayout(this);categories.addView(tabs);body.addView(categories);
+        LinearLayout features=new LinearLayout(this);features.setOrientation(1);body.addView(features);
+        Runnable render=()->{
+            tabs.removeAllViews();for(String cat:new String[]{"All","Playback","Appearance","Tools"}){LinearLayout slot=new LinearLayout(this);Button b=button(slot,cat,cat.equals(category),()->{category=cat;home();});b.setTextSize(11);LinearLayout.LayoutParams tabLp=(LinearLayout.LayoutParams)b.getLayoutParams();tabLp.height=dp(34);tabLp.topMargin=dp(4);tabLp.bottomMargin=0;b.setLayoutParams(tabLp);LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(dp(cat.equals("Appearance")?100:75),dp(42));lp.rightMargin=dp(6);tabs.addView(slot,lp);}
+            features.removeAllViews();if(contextUri!=null&&(category.equals("All")||category.equals("Playback"))){LinearLayout current=EnhancerPanel.card(features);muted(current,contextTitle==null?"Current playlist":contextTitle);button(current,"+  Add to Mixer",false,()->{try{library.select(draft.sources.size(),contextUri,contextTitle);draft=library.active();contextUri=null;mixer();}catch(Exception e){failure(e);}});}
+            text(features,"Your tools",16,true);int count=0;
+            String[][] items={{"Playlist Mixer","Blend your playlists","mix","Playback"},{"Mix Presets","Your saved combinations","presets","Playback"},{"Mix History","Pick up where you left off","history","Playback"},{"Diagnostics","Connection and troubleshooting","tools","Tools"}};
+            for(String[] item:items)if((category.equals("All")||category.equals(item[3]))&&(item[0]+" "+item[1]).toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT))){count++;EnhancerPanel.feature(features,item[0],item[1],item[2],()->{if(item[0].equals("Playlist Mixer"))mixer();else if(item[0].equals("Diagnostics"))diagnostics();else collection(item[0].equals("Mix History"));});}
+            if(count==0)muted(features,"No features in this category yet.");TextView footer=muted(features,"More features, one place");footer.setGravity(Gravity.CENTER);footer.setPadding(0,dp(18),0,0);
+        };
+        search.setText(query);search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int n,int a){}public void onTextChanged(CharSequence s,int st,int before,int n){query=s.toString();render.run();}public void afterTextChanged(Editable e){}});render.run();
     }
-    private void home(){generation++;session.invalidate();mixer=false;LinearLayout box=page("SpotEnhancer","Back to Spotify",()->returnToSpotify());
-        LinearLayout hero=EnhancerTheme.card(box);text(hero,"Your music. Your way.",26);text(hero,"Enhancements for your everyday listening.",16);
-        text(box,"PLAYBACK",14);LinearLayout playback=EnhancerTheme.card(box);text(playback,"Two playlists. One mix.",22);text(playback,"Choose your balance, shuffle and start listening.",15);button(playback,"Playlist Mixer",()->showMixer());
-        text(box,"TOOLS",14);LinearLayout tools=EnhancerTheme.card(box);text(tools,"Connection & diagnostics",20);text(tools,"Check the integration and troubleshoot problems.",15);button(tools,"Diagnostics",()->diagnostics());
-    }
-    private void showMixer(){
-        final int token=++generation;session.invalidate();mixer=true;shownSelection=selectionSignature();
-        LinearLayout box=page("Playlist Mixer","Back to Spotify",()->returnToSpotify());
-        if(pending!=null){text(box,title==null?"Selected playlist":title,20);button(box,"Use as Playlist A",()->save("a"));button(box,"Use as Playlist B",()->save("b"));}
-        LinearLayout cardA=EnhancerTheme.card(box);text(cardA,"Playlist A",16);TextView aName=text(cardA,prefs.getString("a_title",prefs.contains("a")?"Selected playlist":"Not selected"),20);
-        LinearLayout cardB=EnhancerTheme.card(box);text(cardB,"Playlist B",16);TextView bName=text(cardB,prefs.getString("b_title",prefs.contains("b")?"Selected playlist":"Not selected"),20);
-        Switch shuffle=new Switch(this);shuffle.setText("Shuffle mix");shuffle.setTextColor(0xffffffff);shuffle.setThumbTintList(new android.content.res.ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[]{}},new int[]{EnhancerTheme.GREEN,EnhancerTheme.MUTED}));shuffle.setChecked(prefs.getBoolean("shuffle",false));shuffle.setPadding(0,16,0,16);box.addView(shuffle);
-        TextView ratio=text(box,"",18);SeekBar slider=new SeekBar(this);slider.setProgressTintList(android.content.res.ColorStateList.valueOf(EnhancerTheme.GREEN));slider.setThumbTintList(android.content.res.ColorStateList.valueOf(EnhancerTheme.GREEN));slider.setMax(100);slider.setProgress(prefs.getInt("ratio",70));
-        ratio.setText("A: "+slider.getProgress()+"%   B: "+(100-slider.getProgress())+"%");box.addView(slider);
-        text(box,"Open a playlist in Spotify and tap Add to Mixer to select it.",16);
-        Button chooseA=EnhancerTheme.button(box,"Choose Playlist A",true,()->choose("a"));
-        Button chooseB=EnhancerTheme.button(box,"Choose Playlist B",true,()->choose("b"));
-        text(box,"Experimental native playback · up to 100 unique tracks",14);
-        text(box,NativeBridge.ready()?"● Connected to Spotify":"○ Waiting for Spotify",14);
-        final TextView state=text(box,NativeBridge.ready()?"Load both playlists to prepare the mix.":"Open a playlist and play a track in Spotify once, then return here and refresh the connection.",14);
-        Button load=EnhancerTheme.button(box,"Load mix",true,()->{});
-        Button start=EnhancerTheme.button(box,"Start Mix",true,()->{});start.setEnabled(false);
-        MixSession.Prepared[] prepared={null};
-        Runnable allowLoad=()->load.setEnabled(NativeBridge.ready()&&PlaylistUri.normalize(prefs.getString("a",null))!=null&&PlaylistUri.normalize(prefs.getString("b",null))!=null);
-        allowLoad.run();
-        shuffle.setOnCheckedChangeListener((button,checked)->{if(!prefs.edit().putBoolean("shuffle",checked).commit())Toast.makeText(this,"Could not save shuffle setting",Toast.LENGTH_LONG).show();shownSelection=selectionSignature();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Shuffle changed. Load the mix again.");});
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){ratio.setText("A: "+n+"%   B: "+(100-n)+"%");if(user){prefs.edit().putInt("ratio",n).apply();shownSelection=selectionSignature();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Ratio changed. Load the mix again.");}}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){if(!prefs.edit().putInt("ratio",s.getProgress()).commit())Toast.makeText(SpotEnhancerActivity.this,"Could not save mix balance",Toast.LENGTH_LONG).show();}});
-        load.setOnClickListener(v->{
-            load.setEnabled(false);start.setEnabled(false);slider.setEnabled(false);shuffle.setEnabled(false);chooseA.setEnabled(false);chooseB.setEnabled(false);prepared[0]=null;
-            String a=prefs.getString("a",null),b=prefs.getString("b",null);int percent=slider.getProgress();boolean shuffled=shuffle.isChecked();
-            new Thread(()->{
-                try{
-                    MixSession.Prepared next=session.prepare(a,b,percent,shuffled,message->onMixUi(token,()->state.setText(message)));
-                    onMixUi(token,()->{
-                        prepared[0]=next;
-                        if(a.equals(prefs.getString("a",null))&&!next.a.title.isEmpty()){aName.setText(next.a.title);prefs.edit().putString("a_title",next.a.title).apply();}
-                        if(b.equals(prefs.getString("b",null))&&!next.b.title.isEmpty()){bName.setText(next.b.title);prefs.edit().putString("b_title",next.b.title).apply();}
-                        String note=next.plan.fromA!=(int)Math.round(next.plan.tracks.size()*percent/100.0)?" Source limits changed the final ratio.":"";
-                        state.setText("Ready: "+next.plan.tracks.size()+" tracks · A: "+next.plan.fromA+" / B: "+next.plan.fromB+note);start.setEnabled(true);
-                    });
-                }catch(Exception error){onMixUi(token,()->state.setText("Could not load mix: "+errorMessage(error)));}
-                finally{onMixUi(token,()->{slider.setEnabled(true);shuffle.setEnabled(true);chooseA.setEnabled(true);chooseB.setEnabled(true);allowLoad.run();});}
-            },"spotenhancer-load").start();
+    private int dp(int n){return EnhancerPanel.dp(this,n);}
+    private void mixer(){
+        final LinearLayout body=page("Playlist Mixer","mixer");final int token=generation;
+        LinearLayout presetRow=new LinearLayout(this);presetRow.setGravity(Gravity.CENTER_VERTICAL);LinearLayout picker=new LinearLayout(this),save=new LinearLayout(this);presetRow.addView(picker,new LinearLayout.LayoutParams(0,-2,1));LinearLayout.LayoutParams saveLp=new LinearLayout.LayoutParams(dp(120),-2);saveLp.leftMargin=dp(10);presetRow.addView(save,saveLp);body.addView(presetRow);
+        controls.add(button(picker,presetName+"  ⌄",false,()->collection(false)));controls.add(button(save,"Save preset",false,this::savePreset));text(body,"Sources",16,true);
+        final List<TextView> names=new ArrayList<>();final List<SeekBar> sliders=new ArrayList<>();final List<TextView> numbers=new ArrayList<>();final boolean[] updating={false};
+        for(int i=0;i<draft.sources.size();i++){
+            final int index=i;MixConfig.Source source=draft.sources.get(i);LinearLayout card=EnhancerPanel.card(body);card.setOrientation(0);card.setGravity(Gravity.CENTER_VERTICAL);
+            TextView tile=new TextView(this);tile.setText(String.valueOf((char)('A'+i%26)));tile.setGravity(Gravity.CENTER);tile.setTextColor(0xffc5ffdb);tile.setTypeface(null,1);tile.setBackground(EnhancerPanel.surface(new int[]{0xff693e39,0xff33496c,0xff586241,0xff574268}[i%4],8,this,false));card.addView(tile,new LinearLayout.LayoutParams(dp(40),dp(40)));
+            LinearLayout center=new LinearLayout(this);center.setOrientation(1);center.setPadding(dp(12),0,dp(6),0);card.addView(center,new LinearLayout.LayoutParams(0,-2,1));TextView name=text(center,source.title,14,true);names.add(name);name.setMaxLines(2);name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            SeekBar slider=new SeekBar(this);slider.setContentDescription("Weight for "+source.title);slider.setMax(100);slider.setProgress(source.weight);slider.setProgressTintList(android.content.res.ColorStateList.valueOf(EnhancerPanel.GREEN));slider.setThumbTintList(android.content.res.ColorStateList.valueOf(0xffeeeeee));center.addView(slider,new LinearLayout.LayoutParams(-1,dp(28)));sliders.add(slider);controls.add(slider);
+            TextView number=new TextView(this);number.setText(source.weight+"%");number.setTextSize(13);number.setTextColor(EnhancerPanel.GREEN);number.setGravity(Gravity.CENTER);card.addView(number,new LinearLayout.LayoutParams(dp(40),-2));numbers.add(number);
+            ImageButton more=EnhancerPanel.icon(this,"presets","Options for "+source.title,()->{});more.setImageDrawable(null);more.setContentDescription("Options for "+source.title);more.setImageDrawable(new android.graphics.drawable.ColorDrawable(0x00000000));TextView dots=new TextView(this);dots.setText("⋯");dots.setTextColor(EnhancerPanel.WHITE);dots.setTextSize(20);dots.setGravity(Gravity.CENTER);dots.setContentDescription("Options for "+source.title);card.addView(dots,new LinearLayout.LayoutParams(dp(28),dp(40)));controls.add(dots);dots.setOnClickListener(v->{PopupMenu menu=new PopupMenu(this,dots);menu.getMenu().add("Replace playlist").setOnMenuItemClickListener(item->{choose(index);return true;});menu.getMenu().add("Remove playlist").setOnMenuItemClickListener(item->{draft=draft.remove(index);if(persist())mixer();return true;});menu.show();});
+            slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){if(!user||updating[0])return;draft=draft.balance(index,n);updating[0]=true;for(int j=0;j<sliders.size();j++){sliders.get(j).setProgress(draft.sources.get(j).weight);numbers.get(j).setText(draft.sources.get(j).weight+"%");}updating[0]=false;prepared=null;session.invalidate();if(start!=null)start.setEnabled(false);}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){persist();if(status!=null)status.setText("Balance saved. Load the mix again.");}});
+        }
+        if(draft.sources.isEmpty())muted(body,"Add playlists from Spotify to begin.");controls.add(button(body,"+  Add playlist",false,()->choose(draft.sources.size())));
+        Switch shuffle=new Switch(this);shuffle.setText("Shuffle mix");shuffle.setTextSize(14);shuffle.setTextColor(EnhancerPanel.WHITE);shuffle.setChecked(draft.shuffle);shuffle.setThumbTintList(new android.content.res.ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[]{}},new int[]{EnhancerPanel.GREEN,EnhancerPanel.MUTED}));shuffle.setTrackTintList(android.content.res.ColorStateList.valueOf(0xff35514a));shuffle.setPadding(0,dp(16),0,dp(16));body.addView(shuffle);controls.add(shuffle);shuffle.setOnCheckedChangeListener((b,checked)->{draft=new MixConfig(draft.sources,checked);persist();status.setText("Shuffle saved. Load the mix again.");});
+        LinearLayout info=EnhancerPanel.card(body);text(info,"Full playlists",14,true);muted(info,"All unique tracks · no 100-track cap");muted(info,"Percentages guide order until a source runs out. A 0% source is excluded.");
+        ProgressBar progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setIndeterminate(true);progress.setVisibility(View.GONE);body.addView(progress,new LinearLayout.LayoutParams(-1,dp(4)));
+        status=muted(body,NativeBridge.ready()?"Ready to load your playlists.":"Open a playlist and play a track in Spotify, then refresh the connection.");
+        load=button(body,"Load mix",true,()->{
+            if(!persist())return;final MixConfig snapshot=draft;setBusy(true,progress);status.setText("Loading full playlists…");
+            new Thread(()->{try{MixSession.Prepared next=session.prepare(snapshot,message->onMixer(token,()->status.setText(message)));onMixer(token,()->{prepared=next;draft=next.config;for(int i=0;i<names.size();i++)names.get(i).setText(draft.sources.get(i).title);try{library.save(draft);shown=library.signature();}catch(Exception e){failure(e);}status.setText("Ready · "+next.plan.tracks.size()+" unique tracks");start.setEnabled(true);});}catch(Exception e){onMixer(token,()->status.setText("Could not load mix: "+error(e)));}finally{onMixer(token,()->setBusy(false,progress));}},"spotenhancer-load").start();
         });
-        start.setOnClickListener(v->{
-            MixSession.Prepared next=prepared[0];prepared[0]=null;start.setEnabled(false);load.setEnabled(false);slider.setEnabled(false);shuffle.setEnabled(false);chooseA.setEnabled(false);chooseB.setEnabled(false);state.setText("Sending the mix to Spotify…");
-            new Thread(()->{
-                try{session.start(next);onMixUi(token,()->state.setText("Spotify accepted the mix request. Return to Spotify to check playback."));}
-                catch(Exception error){onMixUi(token,()->state.setText("Could not start mix: "+errorMessage(error)));}
-                finally{onMixUi(token,()->{slider.setEnabled(true);shuffle.setEnabled(true);chooseA.setEnabled(true);chooseB.setEnabled(true);allowLoad.run();});}
-            },"spotenhancer-play").start();
-        });
-        button(box,"Refresh connection",()->showMixer());
-        button(box,"Back to SpotEnhancer",()->{pending=null;home();});
+        start=button(body,"Start Mix",true,()->{
+            final MixSession.Prepared next=prepared;final String requestName=presetName;prepared=null;setBusy(true,progress);status.setText("Sending full mix to Spotify…");
+            new Thread(()->{try{session.start(next);String historyError="";try{library.add(requestName.equals("Custom mix")?"Mix · "+next.config.sources.size()+" playlists":requestName,next.config,true,next.plan.tracks.size());}catch(Exception e){historyError=" History could not be saved.";}final String note=historyError;onMixer(token,()->status.setText("Spotify accepted the mix. Return to Spotify to check playback."+note));}catch(Exception e){onMixer(token,()->status.setText("Could not start mix: "+error(e)));}finally{onMixer(token,()->setBusy(false,progress));}},"spotenhancer-play").start();
+        });start.setEnabled(false);load.setEnabled(canLoad());button(body,"History",false,()->collection(true));button(body,"Refresh connection",false,this::mixer);
     }
-    private void onMixUi(int token,Runnable action){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed()&&mixer&&generation==token)action.run();});}
-    private static String errorMessage(Exception error){Throwable cause=error;while(cause.getCause()!=null)cause=cause.getCause();return cause.getMessage()==null?cause.getClass().getSimpleName():cause.getMessage();}
-    private void diagnostics(){generation++;session.invalidate();mixer=false;
-        LinearLayout box=page("Diagnostics","Back to Spotify",()->returnToSpotify());
-        text(box,Diagnostics.report()+"\n"+NativeBridge.state(),14);
-        text(box,"Open a playlist in Spotify first, then return here. This report contains class names and argument keys, not playlist URLs or names.",14);
-        button(box,"Back to SpotEnhancer",()->home());
+    private boolean canLoad(){return NativeBridge.ready()&&draft.sources.size()>=2;}
+    private void setBusy(boolean value,ProgressBar progress){busy=value;for(View control:controls)control.setEnabled(!value);load.setEnabled(!value&&canLoad());start.setEnabled(!value&&prepared!=null);progress.setVisibility(value?View.VISIBLE:View.GONE);}
+    private void onMixer(int token,Runnable action){runOnUiThread(()->{if(!isFinishing()&&!isDestroyed()&&screen.equals("mixer")&&generation==token)action.run();});}
+    private void choose(int index){if(busy)return;if(!prefs.edit().putString("pending_slot","source:"+index).commit()){failure(new Exception("Could not save selection request"));return;}startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("spotify:collection:playlists")).setPackage(getPackageName()).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));finish();Toast.makeText(this,"Open a playlist, then tap the green tools button",Toast.LENGTH_LONG).show();}
+    private void savePreset(){EditText input=new EditText(this);input.setSingleLine(true);input.setHint("Preset name");input.setText(presetName.equals("Custom mix")?"":presetName);input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(80)});new AlertDialog.Builder(this,android.R.style.Theme_Material_Dialog_Alert).setTitle("Save preset").setView(input).setNegativeButton("Cancel",null).setPositiveButton("Save",(dialog,which)->{try{library.add(input.getText().toString(),draft,false,0);presetName=input.getText().toString().trim();mixer();}catch(Exception e){failure(e);}}).show();}
+    private void collection(boolean history){
+        LinearLayout body=page(history?"Mix History":"Mix Presets",history?"history":"presets");muted(body,history?"Accepted mix requests. Reloads current playlist contents; playback is never automatic.":"Your saved combinations, ready when you are.");
+        try{List<MixLibrary.Entry> entries=library.entries(history);if(entries.isEmpty()){LinearLayout empty=EnhancerPanel.card(body);text(empty,history?"No mixes yet":"No presets yet",20,true);muted(empty,history?"Start a mix to add it here.":"Create a mix and choose Save preset.");button(empty,"Open mixer",true,this::mixer);}for(MixLibrary.Entry entry:entries){LinearLayout card=EnhancerPanel.card(body);text(card,entry.name,16,true);muted(card,entry.config.sources.size()+" playlists"+(history?" · "+entry.tracks+" tracks · "+java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT,java.text.DateFormat.SHORT).format(new Date(entry.time)):""));StringBuilder sources=new StringBuilder();for(MixConfig.Source source:entry.config.sources){if(sources.length()>0)sources.append(" · ");sources.append(source.title).append(" ").append(source.weight).append("%");}muted(card,sources.toString());button(card,history?"Load this mix":"Use preset",true,()->{try{library.save(entry.config);draft=entry.config;presetName=entry.name;mixer();}catch(Exception e){failure(e);}});button(card,"Delete",false,()->new AlertDialog.Builder(this,android.R.style.Theme_Material_Dialog_Alert).setTitle("Delete "+(history?"history entry":"preset")+"?").setNegativeButton("Cancel",null).setPositiveButton("Delete",(d,w)->{try{library.delete(entry.id,history);collection(history);}catch(Exception e){failure(e);}}).show());}}
+        catch(Exception e){muted(body,error(e));}
     }
-    private void choose(String slot){
-        if(!prefs.edit().putString("pending_slot",slot).commit()){Toast.makeText(this,"Could not save selection request",Toast.LENGTH_LONG).show();return;}
-        startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("spotify:collection:playlists")).setPackage(getPackageName()).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
-        finish();
-        Toast.makeText(this,"Open a playlist, then tap Add to Mixer",Toast.LENGTH_LONG).show();
-    }
-    private void returnToSpotify(){
-        if(!getIntent().getBooleanExtra("from_spotify",false))startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setClassName(getPackageName(),"com.spotify.music.MainActivity").addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
-        finish();
-    }
-    private void save(String slot){if(!MixerPreferences.select(prefs,slot,pending,title)){Toast.makeText(this,"Could not save playlist. Please try again.",Toast.LENGTH_LONG).show();return;}pending=null;showMixer();Toast.makeText(this,"Playlist "+slot.toUpperCase(java.util.Locale.ROOT)+" selected",Toast.LENGTH_SHORT).show();}
-    private TextView text(LinearLayout box,String value,int size){return EnhancerTheme.text(box,value,size,size>=20);}
-    private void button(LinearLayout box,String label,Runnable action){EnhancerTheme.button(box,label,label.startsWith("Choose") || label.equals("Playlist Mixer"),action);}
+    private void diagnostics(){LinearLayout body=page("Diagnostics","diagnostics");TextView report=muted(body,Diagnostics.report()+"\n"+NativeBridge.state());report.setTextIsSelectable(true);muted(body,"No playlist URLs or names are included in this diagnostic report.");}
+    private void returnToSpotify(){session.invalidate();if(!getIntent().getBooleanExtra("from_spotify",false))startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setClassName(getPackageName(),"com.spotify.music.MainActivity").addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));finish();}
 }
