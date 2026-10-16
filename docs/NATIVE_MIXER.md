@@ -1,11 +1,11 @@
-# Native Playlist Mixer — 0.11
+# Native Playlist Mixer — 0.12
 
 Restricted to the SHA-pinned Spotify 9.1.90.2270 input. No Spotify binary or proprietary decompiled source is distributed.
 
 ## Flow
 
 1. Open the green wrench button on Spotify's main app surface. It opens a private translucent Activity, with Spotify dimmed underneath. No system overlay permission is used and no content padding/top navigation row is added.
-2. Open Playlist Mixer and choose **Add playlist**. Spotify's library opens inside the same app. Open a playlist and tap the wrench to complete the pending selection. The home panel also offers Add to Mixer for a recognized current playlist.
+2. Open Playlist Mixer and choose **Add playlist**. Spotify's library opens inside the same app. Open a playlist and tap its page-level **Add to Mixer** pill to complete the pending selection; the wrench remains an alternative. The page pill can also add a playlist directly without a pending request. It appends that source, commits and opens the mixer, or opens the existing mix without duplicating an already included source. The home panel also retains Add to Mixer for a recognized current playlist.
 3. Add two or more different sources. Adjusting one percentage redistributes the others so they sum to 100. Replace/remove actions are on each source's options menu. A 0% source is excluded.
 4. **Load mix** paginates every included source in pages of 100 rows, using Spotify's existing authenticated playlist service. This page size is not an output limit. Real title metadata updates the source labels. The previous 100-output-track cap, 10,000-row guard and 90-second whole-playlist deadline are removed; the 30-second individual service-call timeout and malformed/incomplete-response checks remain.
 5. FullMixPlanner includes every unique canonical Spotify track URI from the included sources. Episodes/local/invalid items are excluded. Weighted fair ordering follows the chosen percentages until a source runs out, then continues with the remaining sources. **Using every track cannot also force arbitrary final percentage counts when playlist lengths differ.** With Spotify shuffle enabled the player randomizes that prepared order; the UI explains this distinction.

@@ -1,6 +1,12 @@
 # SpotEnhancer — next session
 
-## Current state: 0.11
+## Current state: 0.12
+
+0.12 adds a **page-scoped Add to Mixer pill** on recognized playlist FrameLayouts (lower left, above player area). It is separate from the global wrench and is not an overflow/header-menu injection. It adds and opens the mixer directly, honors a pending source index, and avoids duplicate sources without autoplay. The existing hook schedules attachment only if the captured root still has the same owner. Current arguments and the fragment's current view are checked again on every click. Missing identities/arguments remove or hide the action. Only direct children owned by that root are reused/removed; global-layout listeners are unregistered on detach. Identity-only visibility refresh avoids rescanning headings on every layout. No new proprietary-class hook or method reference is added to original classes2.dex. The supplied pinned root p.s3g1 was verified as FrameLayout; its addView ultimately delegates to ViewGroup. Private inspection remains outside the repository.
+
+The main Android fixture now selects three sources using the page button. A dedicated flow adds directly without a pending request, taps again without creating a duplicate, and verifies the button is absent on library pages. Reused-argument coverage also clears arguments and expects no stale context. Final 0.12 build/evidence links are in README.md and VALIDATION.md.
+
+## Retained 0.11 behavior
 
 Continue on `codex/mixer-installer`, draft PR #1. Do not merge. The user approved the generated three-screen concept and asked to reproduce it, including presets, multiple weighted playlists, history and full playlists. All project UI remains English.
 

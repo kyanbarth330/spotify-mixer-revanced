@@ -2,9 +2,15 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.11](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38885593406/artifacts/12039133945)
+## [Download SpotEnhancer 0.12](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38889340556/artifacts/12040699354)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
+
+## Version 0.12 — Add to Mixer on the playlist page
+
+Recognized playlist pages now show a green **Add to Mixer** pill directly on the page, at the lower left above the player area. It is attached to that playlist fragment's FrameLayout and disappears outside a recognized playlist; it is not a restored global top bar or a native overflow-menu row. One tap durably adds the current playlist and opens the mixer. A pending source selection replaces that requested source instead. Existing playlists are not duplicated, and no audio starts automatically. The green wrench and panel remain available.
+
+The action re-reads current arguments and checks that the fragment still owns this view before each click. Missing arguments, detached/replaced roots and ambiguous identities do not add a stale playlist. See validation for own-fixture test scope and real-device limits.
 
 ## Version 0.11 — concept-style tools panel and full mixes
 
