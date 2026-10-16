@@ -48,15 +48,15 @@ public class AndroidSmokeTest {
         context.startActivity(new Intent(context,FixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
         try{
             tools();assertFalse(device.hasObject(By.text("Add to Mixer")));screenshot("01-floating-tools-fixture");tools().click();
-            waitText("Playlist Mixer");screenshot("02-feature-panel");waitText("Playlist Mixer").click();
-            for(String title:new String[]{"Playlist Alpha","Playlist Beta","Playlist Gamma"}){waitText("+  Add playlist").click();waitText("Test library");waitText(title).click();tools().click();waitText(title);}
+            waitText("Playlist Mixer");screenshot("02-feature-panel");UiObject2 search=device.findObject(By.clazz("android.widget.EditText"));assertNotNull(search);search.setText("history");device.waitForIdle();waitText("Mix History");assertFalse(device.hasObject(By.text("Playlist Mixer")));search.setText("");waitText("Playlist Mixer").click();
+            for(String title:new String[]{"Playlist Alpha","Playlist Beta","Playlist Gamma"}){waitText("+  Add playlist").click();waitText("Test library");waitText(title).click();tools().click();waitText("Sources");waitText(title);}
             org.example.spotifymixer.runtime.MixLibrary library=new org.example.spotifymixer.runtime.MixLibrary(context.getSharedPreferences(PREFS,0));
             assertEquals(3,library.active().sources.size());
             UiObject2 slider=device.findObject(By.desc("Weight for Playlist Alpha"));assertNotNull(slider);Rect bounds=slider.getVisibleBounds();device.click(bounds.left+bounds.width()/2,bounds.centerY());device.waitForIdle();
             assertEquals(100,library.active().sources.stream().mapToInt(source->source.weight).sum());
             waitText("Shuffle mix").click();assertTrue(device.wait(Until.hasObject(By.text("Shuffle mix").checked(true)),4000));device.waitForIdle();assertTrue(library.active().shuffle);
             screenshot("03-multi-playlist-mixer");
-            waitText("Save preset").click();UiObject2 name=device.wait(Until.findObject(By.clazz("android.widget.EditText")),3000);assertNotNull(name);name.setText("Morning blend");waitText("Save").click();waitText("Sources");
+            waitText("Save preset").click();UiObject2 name=device.wait(Until.findObject(By.clazz("android.widget.EditText")),3000);assertNotNull(name);name.setText("Morning blend");waitText("Save").click();waitText("Morning blend  ⌄");waitText("Sources");
             assertEquals(1,library.entries(false).size());assertEquals(3,library.entries(false).get(0).config.sources.size());
             assertFalse(waitText("Load mix").isEnabled());assertFalse(device.hasObject(By.text("Start Mix")));
             waitText("History").click();waitText("No mixes yet");screenshot("04-empty-history");
