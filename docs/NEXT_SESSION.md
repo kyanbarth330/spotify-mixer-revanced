@@ -29,3 +29,7 @@
 ## Delivery constraints
 
 Do not publish original or patched Spotify APKs, private keys or proprietary decompiled source. Build/test installer changes and document actual device results separately from static/build/signature checks. Do not infer runtime success from a successful build.
+
+## Background work authorization
+
+The user explicitly asked to continue while they sleep and to test on a virtual device between changes. A one-time background continuation is scheduled for this project. Continue within the existing draft PR; do not merge. An Android 35 emulator workflow and original testhost were added: see docs/EMULATOR_TESTS.md and `.github/workflows/android-smoke.yml`. Check their latest results before proceeding, fix demonstrable failures, and record screenshots/results. The fixture tests only the original SpotEnhancer runtime and synthetic parameters; never describe it as a real Spotify/login/playback test. Never upload the proprietary APK to the public runner/artifacts.
