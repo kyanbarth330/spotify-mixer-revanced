@@ -50,3 +50,11 @@ The matching [installer build 38841700440](https://github.com/kyanbarth330/spoti
 ## 0.9 native mixer controls
 
 [Run 38877505585](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38877505585) passes 4/4 tests. [Evidence artifact 12035604574](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38877505585/artifacts/12035604574) was downloaded; JUnit reports 0 failures/errors/skips and 39.581 seconds. The inspected mixer screenshot shows the experimental native service state plus disabled Load mix/Start Mix in the synthetic host. No fake native backend or simulated playback-success UI is installed in the fixture. Prepare/start transactions and protobuf schema/error behavior have separate pure Java tests; actual services are checked statically against the private input APK and still require a logged-in device trial.
+
+## 0.10 — replacement and real process restart
+
+[Run 38881099313](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38881099313) passes six connected tests; one phase-only persistence test is intentionally skipped in that suite. The fixture selects Alpha/Beta, then replaces both with Gamma/Delta while retaining shuffle. It also checks changed arguments on a reused fragment and a resumed mixer refreshing changed selections. Two explicit instrumentation phases write replacement preferences, force-stop the fixture, and read them in a new process. Both report OK (1 test).
+
+[Evidence 12037323074](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38881099313/artifacts/12037323074) contains eight screenshots and persistence-write/read.txt, retained seven days. The downloaded replacement screenshot shows Gamma/Delta and green Shuffle mix enabled. Earlier runs 38880257744 and 38880460837 reproduced lost asynchronous preference writes; production selection now waits for checked commit before reporting success. A separate immediate post-click assertion race was synchronized. See VALIDATION.md.
+
+Only the original fixture/installer run here. Spotify login/audio, native queue display and queue restoration after a Spotify restart are not covered.

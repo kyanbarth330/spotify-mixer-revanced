@@ -2,9 +2,15 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.9](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38877505652/artifacts/12036475207)
+## [Download SpotEnhancer 0.10](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38881099426/artifacts/12038190296)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
+
+## Version 0.10 — refreshed selections and saved shuffle
+
+[Download installer 0.10](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38881099426/artifacts/12038190296). Add to Mixer reads the current fragment arguments instead of caching a playlist identity, and an already open mixer refreshes when saved sources change. **Shuffle mix** is saved and sent to Spotify with the next prepared mix; toggling it requires **Load mix → Start Mix** again. The home groups features under Playback and Tools; both apps share dark green surfaces and a fixed screen title.
+
+Changing a saved selection does not change the queue already playing in Spotify. Choose the new A/B, then **Load mix → Start Mix** to submit it. The user confirmed 0.9 playback, and subsequently reported stale choices and unusual queue behavior after restart. Selection fixes and own-code persistence tests do **not** establish that Spotify's queue restoration is repaired. Automatic restoration of the mix after Spotify is killed is not implemented; explicitly load/start again. See the validation report for exact test scope.
 
 ## Version 0.9 — experimental native mixer
 
