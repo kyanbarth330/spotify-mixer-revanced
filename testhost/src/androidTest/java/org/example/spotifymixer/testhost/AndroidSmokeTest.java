@@ -31,6 +31,7 @@ public class AndroidSmokeTest {
         while(android.os.SystemClock.uptimeMillis()<deadline);
         throw new AssertionError("Missing UI: "+text);
     }
+    private UiObject2 field(String description)throws Exception{new UiScrollable(new UiSelector().className("android.widget.ScrollView")).scrollIntoView(new UiSelector().description(description));UiObject2 input=device.wait(Until.findObject(By.desc(description)),4000);assertNotNull(description,input);return input;}
     private void screenshot(String name){
         device.waitForIdle();
         try{
@@ -74,6 +75,22 @@ public class AndroidSmokeTest {
             org.example.spotifymixer.runtime.MixLibrary library=new org.example.spotifymixer.runtime.MixLibrary(context.getSharedPreferences(PREFS,0));assertEquals(1,library.active().sources.size());
             waitText("‹  Back to Spotify").click();waitText("Add to Mixer").click();waitText("Sources");assertEquals(1,library.active().sources.size());waitText("‹  Back to Spotify").click();waitText("Return to test library").click();waitText("Test library");device.waitForIdle();assertFalse(device.hasObject(By.text("Add to Mixer")));
         }finally{device.pressHome();}
+    }
+    @Test public void creatorDraftPersistsAndProductionCannotFakeGeneration()throws Exception{
+        context.getSharedPreferences(PREFS,0).edit().clear().commit();Intent intent=new Intent(context,org.example.spotifymixer.runtime.SpotEnhancerActivity.class).putExtra("screen","creator");
+        try(androidx.test.core.app.ActivityScenario<org.example.spotifymixer.runtime.SpotEnhancerActivity> scenario=androidx.test.core.app.ActivityScenario.launch(intent)){
+            waitText("Enable Playlist Creator");assertFalse(waitText("Generate preview").isEnabled());waitText("Enable Playlist Creator").click();
+            field("Playlist name").setText("Night drive");field("Genres").setText("Rock");field("Number of tracks").setText("42");waitText("Save draft").click();waitText("Draft saved on this device. No playlist was created.");assertFalse(waitText("Generate preview").isEnabled());screenshot("10-creator-production-blocked");
+            scenario.recreate();waitText("Playlist: SpotEnhancer-Night drive");assertEquals("42",field("Number of tracks").getText());assertTrue(waitText("Enable Playlist Creator").isChecked());waitText("Enable Playlist Creator").click();assertFalse(waitText("Save draft").isEnabled());assertFalse(waitText("Generate preview").isEnabled());
+        }
+    }
+    @Test public void creatorOwnFixtureReviewsRemovesAndConfirms()throws Exception{
+        context.getSharedPreferences("creator-fixture",0).edit().clear().commit();CreatorFixtureActivity.writes=0;CreatorFixtureActivity.written=null;
+        try(androidx.test.core.app.ActivityScenario<CreatorFixtureActivity> scenario=androidx.test.core.app.ActivityScenario.launch(CreatorFixtureActivity.class)){
+            waitText("Enable Playlist Creator").click();field("Playlist name").setText("Evening");field("Genres").setText("Rock");field("Number of tracks").setText("0");waitText("Generate preview").click();waitText("Choose 1–500 tracks");field("Number of tracks").setText("3");waitText("Generate preview").click();waitText("Review proposal");waitText("Fixture song 2");assertEquals(0,CreatorFixtureActivity.writes);screenshot("11-creator-synthetic-preview");
+            UiObject2 remove=device.wait(Until.findObject(By.desc("Remove Fixture song 2")),4000);assertNotNull(remove);remove.click();waitText("2 tracks · requested 3");waitText("Create Playlist").click();UiObject2 cancel=device.wait(Until.findObject(By.res("android:id/button2")),4000);assertNotNull(cancel);cancel.click();assertEquals(0,CreatorFixtureActivity.writes);
+            waitText("Create Playlist").click();UiObject2 confirm=device.wait(Until.findObject(By.res("android:id/button1")),4000);assertNotNull(confirm);confirm.click();waitText("Created SpotEnhancer-Evening · 2 tracks");assertEquals(1,CreatorFixtureActivity.writes);assertEquals(2,CreatorFixtureActivity.written.size());screenshot("12-creator-synthetic-receipt");
+        }
     }
     @Test public void reusedFragmentReadsReplacementArguments()throws Exception{
         try(androidx.test.core.app.ActivityScenario<FixtureActivity> scenario=androidx.test.core.app.ActivityScenario.launch(FixtureActivity.class)){

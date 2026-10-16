@@ -1,6 +1,16 @@
 # SpotEnhancer — next session
 
-## Current state: 0.12
+## Current work: 0.13 creator foundation (not a Spotify creator release)
+
+Playlist Creator now has a persisted, default-off toggle and an English in-app draft form: name, genres, artists, description and 1–500 requested tracks. The name prefix is `SpotEnhancer-`. Production passes no backend: Generate preview stays disabled and no account-write action is exposed. The own CreatorSession transaction and shared CreatorPanel support unique suggestions, exact requested count (or explicit shortage), review/removal, explicit confirmation and validated receipts. Own fixture adapters are not part of the runtime payload. No AI, native search or playlist creation adapter is implemented or claimed.
+
+**Current blocker:** this continuation's workspace contains no original Spotify APK. Earlier 0.12 private inspection evidence remains historical. Do not search other conversations/Library or download proprietary APKs. Reattach the pinned input to verify native search, recommendation/ranking, playlist creation, ordered add-items, acknowledgement/readback, batching/partial failures, and repeat-request reconciliation. Existing NativeBridge only loads already-known playlists and plays explicit tracks; it cannot search/create. Preserve the current working mixer and the original DEX reference ceiling.
+
+The other selected enhancements are a backlog, not implemented: custom-minute sleep timer, exact-ID duplicate scan, Cinema Player, Find in Playlists, Live Artwork, Rediscover, AMOLED, Compact Lists, Queue Search/Undo, Clean Share, Volume Steps, headphone Playback Rules, Session Guard, Quick Search, Seek Buttons, Confirm Queue Clear, Always Show Track Info, Start Page, No Accidental Skip, Settings Profiles. All future features need their own persisted default-off toggle and truthful availability. Prior uncommitted timer/audit work was lost with the workspace reset; do not claim it shipped.
+
+Build/emulator evidence for 0.13 is pending; append actual results after completed runs. Keep PR #1 draft, merge nothing.
+
+## Retained state: 0.12
 
 0.12 adds a **page-scoped Add to Mixer pill** on recognized playlist FrameLayouts (lower left, above player area). It is separate from the global wrench and is not an overflow/header-menu injection. It adds and opens the mixer directly, honors a pending source index, and avoids duplicate sources without autoplay. The existing hook schedules attachment only if the captured root still has the same owner. Current arguments and the fragment's current view are checked again on every click. Missing identities/arguments remove or hide the action. Only direct children owned by that root are reused/removed; global-layout listeners are unregistered on detach. Identity-only visibility refresh avoids rescanning headings on every layout. No new proprietary-class hook or method reference is added to original classes2.dex. The supplied pinned root p.s3g1 was verified as FrameLayout; its addView ultimately delegates to ViewGroup. Private inspection remains outside the repository.
 

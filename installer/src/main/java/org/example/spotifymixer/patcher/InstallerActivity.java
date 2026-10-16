@@ -30,7 +30,7 @@ public final class InstallerActivity extends Activity {
         setTheme(android.R.style.Theme_Material_NoActionBar);super.onCreate(state);
         signed = new File(new File(getFilesDir(), "output"), "spotify-mixer.apk");
         LinearLayout box=EnhancerTheme.page(this,"SpotEnhancer");
-        EnhancerTheme.text(box,"INSTALLER · 0.12",13,true);
+        EnhancerTheme.text(box,"INSTALLER · 0.13",13,true);
         EnhancerTheme.text(box,"Your music. Your experience.",22,true);
         LinearLayout card=EnhancerTheme.card(box);
         EnhancerTheme.text(card,"Build on your device",20,true);

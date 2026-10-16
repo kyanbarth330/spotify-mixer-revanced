@@ -6,6 +6,12 @@ An independent local Android installer for the exact user-supplied Spotify 9.1.9
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
 
+## Version 0.13 development — Playlist Creator foundation
+
+The tools panel contains a default-off **Playlist Creator** with saved name, genre, artist, description and track-count preferences (1–500). Playlist names use `SpotEnhancer-{name}`. This is a draft form, **not working Spotify generation**: Generate preview is disabled in the shipped runtime because native search/create contracts have not been verified. No playlist is created by saving a draft, and no credentials or external URL workflow is used.
+
+The original creator transaction and shared UI are tested with a clearly labelled own fixture: exact unique counts, proposal/removal, confirmation, one-shot writes and acknowledged name/count. That test is not Spotify recommendation, account creation, login or playback evidence. The original pinned APK is absent in this workspace and is needed to implement the native adapter. Existing 0.12 mixer behavior is retained. See [creator scope](docs/PLAYLIST_CREATOR.md).
+
 ## Version 0.12 — Add to Mixer on the playlist page
 
 Recognized playlist pages now show a green **Add to Mixer** pill directly on the page, at the lower left above the player area. It is attached to that playlist fragment's FrameLayout and disappears outside a recognized playlist; it is not a restored global top bar or a native overflow-menu row. One tap durably adds the current playlist and opens the mixer. A pending source selection replaces that requested source instead. Existing playlists are not duplicated, and no audio starts automatically. The green wrench and panel remain available.

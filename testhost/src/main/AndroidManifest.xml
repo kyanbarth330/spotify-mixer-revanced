@@ -6,5 +6,6 @@
       <intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="spotify"/></intent-filter>
     </activity>
     <activity-alias android:name="com.spotify.music.MainActivity" android:targetActivity=".FixtureActivity" android:exported="true"/>
-  </application>
+  <activity android:name=".CreatorFixtureActivity" android:exported="false" />
+    </application>
 </manifest>
