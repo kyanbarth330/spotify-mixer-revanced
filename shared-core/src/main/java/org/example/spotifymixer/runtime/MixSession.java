@@ -16,7 +16,7 @@ public final class MixSession {
         progress.accept("Loading Playlist A…");Playlist left=backend.load(a,progress);
         progress.accept("Loading Playlist B…");Playlist right=backend.load(b,progress);
         MixPlanner.Plan plan=MixPlanner.plan(left.tracks,right.tracks,ratio,100);
-        if(plan.tracks.isEmpty())throw new IOException("No playable Spotify tracks were returned");
+        if(plan.tracks.isEmpty())throw new IOException("No Spotify tracks were returned");
         Prepared next=new Prepared(left,right,plan,ratio);synchronized(this){if(token!=generation)throw new IOException("Mix loading was cancelled");prepared=next;}return next;
     }
     public void start(Prepared expected)throws Exception{

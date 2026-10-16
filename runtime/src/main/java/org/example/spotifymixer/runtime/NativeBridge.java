@@ -63,7 +63,17 @@ public final class NativeBridge implements MixSession.Backend {
         Object uris=invoke(list.getMethod("p",Collection.class),null,tracks);
         Object context=invoke(ctx.getMethod("fromTrackUris",String.class,list),null,"spotify:collection:tracks",uris);
         Object source=invoke(origin.getMethod("create",String.class),null,"spotenhancer");
-        Object request=invoke(command.getMethod("create",ctx,origin),null,context,source);
+        Class<?> overrides=type(loader,"com.spotify.player.model.command.options.PlayerOptionOverrides"),ob=type(loader,"com.spotify.player.model.command.options.PlayerOptionOverrides$Builder"),prepare=type(loader,"com.spotify.player.model.command.options.PreparePlayOptions"),pb=type(loader,"com.spotify.player.model.command.options.PreparePlayOptions$Builder"),cb=type(loader,"com.spotify.player.model.command.PlayCommand$Builder");
+        Object overrideBuilder=invoke(overrides.getMethod("builder"),null);
+        invoke(ob.getMethod("shufflingContext",Boolean.class),overrideBuilder,Boolean.FALSE);
+        invoke(ob.getMethod("repeatingContext",Boolean.class),overrideBuilder,Boolean.FALSE);
+        invoke(ob.getMethod("repeatingTrack",Boolean.class),overrideBuilder,Boolean.FALSE);
+        Object optionsBuilder=invoke(prepare.getMethod("builder"),null);
+        invoke(pb.getMethod("initiallyPaused",boolean.class),optionsBuilder,false);
+        invoke(pb.getMethod("playerOptionsOverride",overrides),optionsBuilder,invoke(ob.getMethod("build"),overrideBuilder));
+        Object commandBuilder=invoke(command.getMethod("builder",ctx,origin),null,context,source);
+        invoke(cb.getMethod("options",prepare),commandBuilder,invoke(pb.getMethod("build"),optionsBuilder));
+        Object request=invoke(cb.getMethod("build"),commandBuilder);
         Object single=invoke(service.getClass().getMethod("a",command),service,request);
         Class<?> rx=type(loader,"io.reactivex.rxjava3.core.Single");single=invoke(rx.getMethod("timeout",long.class,TimeUnit.class),single,30L,TimeUnit.SECONDS);
         Object response=invoke(rx.getMethod("blockingGet"),single);
