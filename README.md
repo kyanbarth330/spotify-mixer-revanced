@@ -2,7 +2,7 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.7](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38840481620/artifacts/12021047862)
+## [Download SpotEnhancer 0.7](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38841700440/artifacts/12021403453)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
 

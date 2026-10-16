@@ -46,3 +46,5 @@ The transient task workspace was reset before this continuation: the repository 
 
 
 Final continuation evidence: installer 0.7 build 38840481620/artifact 12021047862 passes 19 Java tests and actual payload checks; downloaded payload has 3 DEX/27 runtime/UI classes. Android 35 run 38841185738 passes 4/4 tests and artifact 12020718592 preserves six inspected screenshots plus reports/logcat (seven-day retention). Two Python tests pass. See EMULATOR_TESTS.md for repaired lifecycle/screenshot issues. Current source changes are reviewable in draft PR #1; nothing merged. Native playlist overflow Add to Mixer, verified real Spotify names/track retrieval/playback and stable CI signing remain unfinished.
+
+Final superseding links after fixing Android 35 diagnostic key formatting: installer build 38841700440/artifact 12021403453, emulator run 38841700530/evidence artifact 12021354163. The former passes 19 Java tests and downloaded-payload checks; the latter passes 4/4 tests with six screenshots/report files present. The repaired diagnostics screenshot shows argument key names correctly. Use these links for the delivered 0.7 build.
