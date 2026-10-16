@@ -1,36 +1,37 @@
-# Spotify Mixer Installer
+# SpotEnhancer
 
-One Android installer that accepts a **local user-selected APK**, injects an original Mixer UI, reconstructs and signs the APK on the device, and opens Android's installation confirmation. Spotify binaries are never included in this repository or CI artifacts.
+An independent, local Android installer for enhancements to the exact user-supplied Spotify 9.1.90.2270 APK. Spotify binaries are never distributed in this repository or CI artifacts.
 
-## Version 0.3 fixes the reported startup crash
+## [Download SpotEnhancer 0.4](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38827657914/artifacts/12015429833)
 
-Version 0.2 omitted the DEX containing `Mixer`; Spotify's injected call therefore could not resolve its helper. Use [version 0.3](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38826272783/artifacts/12014794699) and rebuild from the original APK. The final installer asset is now checked for the actual helper class and the patch engine refuses incomplete runtime payloads. Physical-device confirmation remains pending.
+- A dedicated **SpotEnhancer** Activity with **Back to Spotify**, replacing the floating Mixer button/dialog.
+- A **Playlist Mixer** screen inside SpotEnhancer, ready for additional features on the home screen.
+- Contextual **Add to Mixer** and **SpotEnhancer** actions on supported playlist fragment views. Add to Mixer carries the playlist identity from Spotify's fragment arguments; choose Playlist A or B without typing/pasting a URL.
+- Saved playlist selections and ratio. All project UI labels are English.
 
-## Get the installer
+Playback/queue mixing remains unimplemented. Version 0.4's new playlist integration and Activity still need device confirmation. Version 0.3 startup, login and menu opening were confirmed working by the user.
 
-Open [the installer workflow](../../actions/workflows/build-installer.yml), select branch `codex/mixer-installer`, and download `spotify-mixer-installer` from a successful run. Extract and install `installer-debug.apk`. This is a development build.
+## Install
 
-1. Select the supplied standalone Spotify **9.1.90.2270**, version code **147078674** APK.
-2. Wait for validation, DEX injection, reconstruction and signature verification.
-3. Tap **Start Android-installatie**, allow this installer as an installation source if Android requests it, and confirm installation.
-4. Open Spotify. The injected `Spotify Mixer` button opens playlist text fields and a ratio slider; Save stores these locally in Spotify's app data.
+Download `spotify-mixer-installer` from a successful [installer workflow](../../actions/workflows/build-installer.yml) run on branch `codex/mixer-installer`. The historical artifact name/package ID remain unchanged; the app label is **SpotEnhancer Installer**. Extract and install `installer-debug.apk`, select the original supported APK, build, then start Android installation.
 
-**Playback/queue mixing and playlist fetching are not implemented.** The button is attached to Spotify's main activity, rather than inserted as a native Settings row. On-device behavior is not yet verified. See [validation](docs/VALIDATION.md) for the actual test results and remaining work.
+Open a playlist in Spotify. The inline row has **Add to Mixer** and **SpotEnhancer**. The former opens playlist assignment; the latter opens the enhancement home. **Back to Spotify** finishes the enhancement Activity and returns to Spotify's existing screen.
 
-For an existing 0.2 installation: the 0.3 development installer has a different certificate. Remove the old installer and the crashing patched Spotify before this test, then install 0.3 and rebuild. This removes local app data/downloads; clearing the installer loses its old signing key. Fresh CI debug keys are a known development limitation.
+CI currently produces fresh debug installer certificates. Updating an older installer may require removing it; this loses its Android Keystore signing key, so the previously patched Spotify cannot be updated with a newly generated key. Reinstalling Spotify removes local data/downloads. Nothing is uninstalled automatically. Stable installer signing is still a development limitation.
 
-## Compatibility
+## Supported input
 
-Only the exact supplied APK is supported (SHA-256 `5c05366de31788fd0eec6e046c3610311acf5e63c15345e5bdaca6e8f09fb3b4`). Other variants and split APKs are rejected. Android 7/API 24+; reserve at least 1 GB free space. Devices with little memory may fail during DEX rewriting.
+Package `com.spotify.music`, version 9.1.90.2270, code 147078674, exact SHA-256 `5c05366de31788fd0eec6e046c3610311acf5e63c15345e5bdaca6e8f09fb3b4`. Other APKs and split installs are rejected. Android API 24+; reserve at least 1 GB free storage.
 
-The patched APK keeps package `com.spotify.music` but has a different certificate. Android normally refuses to update original Spotify with it. The installer never uninstalls Spotify automatically. Manually uninstalling Spotify removes its local data/downloads. The new signing key belongs to Android Keystore on that device; uninstalling/clearing this installer can lose it and prevent future in-place updates to patched Spotify.
-
-## Build
+## Build and validation
 
 JDK 17, Gradle 8.10.2, Android SDK platform 35:
 
 ```sh
-gradle :engine:test :installer:assembleDebug --no-daemon
+gradle :engine:test :runtime:testDebugUnitTest :installer:assembleDebug
+python3 tools/check_installer_runtime.py installer/build/outputs/apk/debug/installer-debug.apk
 ```
 
-The `runtime` module is an internal build input: all of its original UI DEX files are bundled as an installer asset. Only one installer APK is distributed. The engine contains no entitlement, advertisement, DRM or account-authentication patches. This is an independent project, not an official Spotify or ReVanced product.
+See [validation evidence](docs/VALIDATION.md) and [implementation](docs/INSTALLER.md). The installer bundles every DEX from our original runtime module and verifies that the menu helper exists. No original or patched Spotify APK, private key or proprietary source is committed.
+
+Not affiliated with Spotify or ReVanced. There are no premium, advertisement, DRM or authentication patches.

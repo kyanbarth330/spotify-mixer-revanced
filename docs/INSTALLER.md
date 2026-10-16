@@ -1,27 +1,29 @@
-# Installer implementation
+# SpotEnhancer 0.4 implementation
 
-`installer` is the only user-installed project output. `runtime` builds all original menu DEX files into `mixer-runtime.zip`; `engine` contains the shared Java patch/sign implementation.
+The `installer` module is the only distributed APK. The `runtime` module provides original screens/playlist selection code; all its DEX files are bundled into `mixer-runtime.zip`. The internal package names remain unchanged for continuity.
 
-## Local pipeline
+## Patch pipeline
 
-- Android document picker → private cache, with a 300 MiB limit.
-- Check exact SHA-256 and original APK signature using apksig.
-- Read `classes2.dex`, require precisely one `SpotifyMainActivity.onResume()V`, and insert `Mixer.attach(Activity)` using `invoke-static/range` with the original `this` register. dexlib2 recalculates indexes, branches, exception regions and DEX checksums.
-- Preserve the existing binary manifest/resources and all other DEX/native payloads. Add every runtime DEX consecutively starting at `classes18.dex`. Validate that the actual `Mixer.attach(Activity)` implementation exists before modifying Spotify.
-- Reconstruct ZIP, dropping obsolete JAR signature files and source-stamp certificate hash. Preserve compression methods; align STORED entries to 16 KiB using a valid ZIP extra field.
-- Sign with a device-local RSA-2048 Android Keystore key, using APK Signature Schemes v2/v3 (Android 7+); verify the generated signature before enabling Install.
-- Grant temporary read access to the private output using FileProvider. Request Android's package installation screen. No root, shell commands, network calls, automatic uninstall or silent installation.
+1. Copy the selected original APK into private cache; verify exact SHA-256 and original signature.
+2. Validate the bundled runtime helper and every runtime class definition.
+3. Add one private, non-exported `org.example.spotifymixer.runtime.SpotEnhancerActivity` to the binary manifest. Preserve every original manifest string index and all original XML nodes. No Spotify resource IDs or permissions are changed.
+4. Retain the original main-activity lifecycle call to `Mixer.attach(Activity)`; it no longer creates a floating control.
+5. Hook the verified fragment state manager `p.av10.n()V` to call `Mixer.fragmentResumed(Object)`. The original `classes.dex` already has 65,536 method references. Move the patched class into an appended DEX to avoid overflowing its method table; every original class descriptor is preserved exactly once.
+6. Append every original runtime DEX and the relocated fragment class. Preserve all other APK payloads, strip obsolete signature/source-stamp metadata, align STORED entries, and sign with the device's Android Keystore key using v2/v3 signatures.
+7. Verify output signatures and open Android's installation confirmation through FileProvider. No silent install, root or automatic uninstall.
 
-Temporary input/runtime/unsigned files are removed after each attempt. Signed output stays in private app storage until a new session/build. Rotation is handled without recreating the build activity; process death requires selecting/building again.
+## Playlist integration
 
-## UI behavior
+Exact-version inspection establishes `p.av10.c` as its fragment, `p.gs10.f` as fragment arguments and `p.gs10.e1` as its view. The bridge reads these fields, accepts only a valid Spotify playlist URI/link under known argument keys, and posts UI work after the lifecycle method completes.
 
-The hook posts button attachment to the decor view after the activity resumes. A tag prevents duplicate buttons. The dialog accepts playlist text fields and a 0–100 ratio and stores these in private Spotify preferences. It does not validate playlist ownership, query Spotify APIs or change playback. There is no claim that a native Spotify Settings row or mixer playback is working.
+A FrameLayout fragment root with a playlist identity receives an inline action row. Space is reserved using top padding; there is no window overlay or global floating button. Fragments without a recognized identity or compatible root are left untouched. Reflection/UI failures are caught and logged under `SpotEnhancer`. Detection and placement still need a device test on the user's playlist screen, especially because Spotify's header is largely Compose.
 
-## Installation caveats
+`Add to Mixer` carries the detected identity into the dedicated Activity. The user selects A or B. Playlist titles are used if available in arguments; otherwise the screen uses `Selected playlist`. The URI is stored privately, never entered manually. Slider changes are saved. Playback mixing is not implemented.
 
-Original Spotify and the patched package have different certificates. Android must approve installation; signature mismatch can require manually removing the original installation, losing local data/downloads. Installer data/key loss changes the signing identity. Split installations are unsupported. OEM installer behavior, Android Keystore signing, memory use and UI execution still require a physical-device test.
+## Navigation
 
-## Version 0.3 packaging repair
+SpotEnhancer is a normal private Android Activity inside Spotify, not an AlertDialog. Home contains Playlist Mixer. The mixer screen has a route back to the enhancement home. `Back to Spotify` finishes the Activity and returns to the existing Spotify screen. Android back is also handled. All project-generated visible labels are English.
 
-Version 0.2 incorrectly bundled only the runtime APK's first DEX, which contains `R` and no `Mixer` class. This yields an unresolved helper call at Spotify startup. Version 0.3 bundles every runtime DEX and adds both an engine guard and a final-installer asset check. Rebuild from the original supplied Spotify APK; the previously patched output cannot repair itself.
+## Development signing
+
+GitHub debug installer keys currently differ between builds. Removing the installer loses its device-local Spotify signing key. An older patched Spotify cannot then be updated with the newly generated certificate; reinstalling loses local data/downloads. This is a known limitation, not an automatic installer action.

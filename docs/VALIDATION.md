@@ -64,3 +64,19 @@ gradle :engine:validateLocalApk \
 ```
 
 The Android UI uses Android Keystore instead of this test key. Never commit APKs, test outputs or private keys.
+
+## Version 0.4 — SpotEnhancer
+
+The user confirms version 0.3 now starts, logs in and opens its menu. This is a user-reported device success, not an instrumented test.
+
+Version 0.4 replaces the floating UI with a private Activity and introduces an exact-version fragment lifecycle hook for contextual playlist actions. Static inspection verified the fragment state-manager class/method and its arguments/view fields. Native button detection/placement and the new Activity are still pending device confirmation.
+
+Local checks so far:
+
+- Four engine tests and three playlist identity tests pass; two existing Python parser tests also pass.
+- Actual supplied APK patch/sign integration passes, with 4,859 unmodified ZIP entries compared unchanged. The two additional intentional changes are `classes.dex` and `AndroidManifest.xml`.
+- Binary manifest check confirms all original string indexes are preserved and exactly one private SpotEnhancer Activity is registered.
+- All 102,449 original class descriptors remain present with no duplicates, including the relocated fragment state manager.
+- No source or Spotify APK is uploaded for validation; the proprietary test output stays local.
+
+The [version 0.4 build](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38827657914) succeeded, including the final installer payload check. Artifact `12015429833` was downloaded and inspected: it contains two runtime DEX files and 18 original runtime classes, including SpotEnhancerActivity and the playlist bridge. Local patch/sign/inventory verification was repeated using this exact downloaded runtime, with valid v2/v3 output signatures and the same 4,859 preserved entries. The private Activity registration and all original class descriptors were checked again.
