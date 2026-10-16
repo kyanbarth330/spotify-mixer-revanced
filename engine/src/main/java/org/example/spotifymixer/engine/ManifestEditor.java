@@ -28,7 +28,7 @@ final class ManifestEditor {
             p+=size;
         }
         if(strings==null||insert<0||strings.contains(ACTIVITY))throw new IOException("Unexpected manifest structure");
-        int activity=index(strings,"activity"),name=index(strings,"name"),exported=index(strings,"exported"),ns=index(strings,"http://schemas.android.com/apk/res/android"),value=index(strings,ACTIVITY);
+        int theme=index(strings,"theme"),activity=index(strings,"activity"),name=index(strings,"name"),exported=index(strings,"exported"),ns=index(strings,"http://schemas.android.com/apk/res/android"),value=index(strings,ACTIVITY);
         ByteArrayOutputStream data=new ByteArrayOutputStream();int[] offsets=new int[strings.size()];
         for(int i=0;i<strings.size();i++){offsets[i]=data.size();byte[] utf=strings.get(i).getBytes(StandardCharsets.UTF_8);writeLen(data,strings.get(i).length());writeLen(data,utf.length);data.write(utf);data.write(0);}
         while(data.size()%4!=0)data.write(0);
@@ -36,7 +36,7 @@ final class ManifestEditor {
         sp.putShort((short)1).putShort((short)28).putInt(sp.capacity()).putInt(strings.size()).putInt(0).putInt(256).putInt(28+4*strings.size()).putInt(0);
         for(int off:offsets)sp.putInt(off);sp.put(data.toByteArray());pool=sp.array();
         ByteArrayOutputStream nodes=new ByteArrayOutputStream();
-        start(nodes,activity,new int[][]{{ns,name,value,3,value},{ns,exported,-1,18,0}});end(nodes,activity);
+        start(nodes,activity,new int[][]{{ns,theme,-1,1,0x01030010},{ns,name,value,3,value},{ns,exported,-1,18,0}});end(nodes,activity);
         ByteArrayOutputStream out=new ByteArrayOutputStream();out.write(xml,0,poolStart);out.write(pool);out.write(xml,poolEnd,insert-poolEnd);out.write(nodes.toByteArray());out.write(xml,insert,xml.length-insert);
         byte[] result=out.toByteArray();ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN).putInt(4,result.length);return result;
     }

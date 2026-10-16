@@ -22,12 +22,14 @@ public class AndroidSmokeTest {
     private final Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
     private final UiDevice device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
     private UiObject2 waitText(String text){
-        UiObject2 view=device.wait(Until.findObject(By.text(text)),4000);
-        if(view==null || view.getVisibleBounds().isEmpty()){
-            try{new UiScrollable(new UiSelector().className("android.widget.ScrollView")).scrollTextIntoView(text);}catch(UiObjectNotFoundException ignored){}
-            view=device.wait(Until.findObject(By.text(text)),4000);
-        }
-        assertNotNull("Missing UI: "+text,view);return view;
+        long deadline=android.os.SystemClock.uptimeMillis()+10000;
+        do{try{
+            device.waitForIdle();UiObject2 view=device.wait(Until.findObject(By.text(text)),1000);
+            if(view==null||view.getVisibleBounds().isEmpty()){try{new UiScrollable(new UiSelector().className("android.widget.ScrollView")).scrollTextIntoView(text);}catch(UiObjectNotFoundException ignored){}view=device.wait(Until.findObject(By.text(text)),1000);}
+            if(view!=null&&!view.getVisibleBounds().isEmpty())return view;
+        }catch(StaleObjectException ignored){/* Activity transition: resolve the locator again. */}}
+        while(android.os.SystemClock.uptimeMillis()<deadline);
+        throw new AssertionError("Missing UI: "+text);
     }
     private void screenshot(String name){
         device.waitForIdle();
