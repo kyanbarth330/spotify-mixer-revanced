@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
   <application android:label="SpotEnhancer test fixture" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false">
     <activity android:name="org.example.spotifymixer.runtime.SpotEnhancerActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false"/>
     <activity android:name=".FixtureActivity" android:exported="true">

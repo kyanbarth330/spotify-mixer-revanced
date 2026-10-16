@@ -6,6 +6,10 @@ An independent local Android installer for the exact user-supplied Spotify 9.1.9
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
 
+## Version 0.16 — Equalizer (validation in progress)
+
+Green wrench -> Equalizer: default-off switch, Flat / Bass Boost / Vocal / Treble Boost / Warm presets and manual bands supplied by Android. Saved controls apply to local Spotify audio sessions; remote Connect devices are unaffected. Start or pause/resume a track and Refresh connection if waiting. No global audio session, recording, extra proprietary hook or automatic playback. [Scope and testing](docs/EQUALIZER.md). The 0.15 download above remains the previous validated installer until 0.16 checks finish.
+
 ## Version 0.15 — Theme Studio
 
 Green wrench -> Theme Studio -> Enable themes. Preview and apply **AMOLED Green, Midnight Ocean, Velvet Purple, Rose Gold or Arctic Mint**. The selected preset is saved and affects native Compose UI colors, supported traditional Android views, system bars and SpotEnhancer. Reopen Spotify screen refreshes the main Activity; restart Spotify if a cached screen still has old colors. Restore Spotify defaults disables theming and restores tracked view properties without clearing app data.

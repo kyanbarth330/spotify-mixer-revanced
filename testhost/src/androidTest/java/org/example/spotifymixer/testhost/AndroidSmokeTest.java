@@ -104,6 +104,26 @@ public class AndroidSmokeTest {
             try{session.prepare(new org.example.spotifymixer.runtime.CreatorSession.Request("Retry","rock","","",2),m->{});fail();}catch(java.io.IOException expected){}assertEquals(2,org.example.spotifymixer.runtime.CreatorProtocolFixture.writes);org.example.spotifymixer.runtime.CreatorProtocolFixture.wrongReadback=false;assertEquals(2,backend.verifyPending().count);assertFalse(backend.pending());assertEquals(2,org.example.spotifymixer.runtime.CreatorProtocolFixture.writes);
         }finally{org.example.spotifymixer.runtime.NativeCreator.captureMaker(null);org.example.spotifymixer.runtime.NativeBridge.capturePlaylist(null);}
     }
+    @Test public void equalizerSavesPresetsAndControlsOwnAudioSession()throws Exception{
+        android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);prefs.edit().clear().commit();
+        context.startActivity(new Intent(context,FixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        android.media.AudioTrack track=null;
+        try{
+            waitText("Test library");tools().click();waitText("Equalizer").click();assertFalse(waitText("Enable equalizer").isChecked());
+            UiObject2 spinner=device.wait(Until.findObject(By.desc("Equalizer preset")),4000);assertNotNull(spinner);spinner.click();waitText("Bass Boost").click();waitText("Apply preset").click();assertEquals(1,prefs.getInt("eq_preset",-1));
+            waitText("Enable equalizer").click();assertTrue(prefs.getBoolean("eq_enabled",false));
+            int buffer=android.media.AudioTrack.getMinBufferSize(48000,android.media.AudioFormat.CHANNEL_OUT_MONO,android.media.AudioFormat.ENCODING_PCM_16BIT);
+            track=new android.media.AudioTrack.Builder().setAudioAttributes(new android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_MEDIA).setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC).build()).setAudioFormat(new android.media.AudioFormat.Builder().setSampleRate(48000).setChannelMask(android.media.AudioFormat.CHANNEL_OUT_MONO).setEncoding(android.media.AudioFormat.ENCODING_PCM_16BIT).build()).setBufferSizeInBytes(Math.max(4096,buffer)).setTransferMode(android.media.AudioTrack.MODE_STREAM).build();
+            final int id=track.getAudioSessionId();assertTrue(id>0);
+            com.spotify.playbacknative.AudioRenderer.created(id);InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            assertTrue(org.example.spotifymixer.runtime.EqualizerRuntime.status(),org.example.spotifymixer.runtime.EqualizerRuntime.status().startsWith("Active on local audio session"));
+            assertNotNull(org.example.spotifymixer.runtime.EqualizerRuntime.device());
+            waitText("Refresh connection").click();waitText("Frequency bands");screenshot("15-equalizer-own-audio-session");
+            waitText("Reset to Flat").click();assertEquals(0,prefs.getInt("eq_preset",-1));
+            waitText("Enable equalizer").click();assertFalse(prefs.getBoolean("eq_enabled",true));assertNull(org.example.spotifymixer.runtime.EqualizerRuntime.device());
+            com.spotify.playbacknative.AudioRenderer.destroyed(id);InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        }finally{prefs.edit().putBoolean("eq_enabled",false).commit();org.example.spotifymixer.runtime.EqualizerRuntime.refresh();if(track!=null)track.release();device.pressHome();}
+    }
     @Test public void themeStudioSavesPresetAndRestoresDefaults()throws Exception{
         android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);prefs.edit().clear().commit();context.startActivity(new Intent(context,FixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
         try{waitText("Test library");tools().click();waitText("Theme Studio").click();assertFalse(waitText("Enable themes").isChecked());assertFalse(waitText("Apply theme").isEnabled());waitText("Enable themes").click();UiObject2 spinner=device.wait(Until.findObject(By.desc("Theme preset")),4000);assertNotNull(spinner);spinner.click();waitText("Midnight Ocean").click();waitText("Apply theme").click();assertTrue(prefs.getBoolean("theme_enabled",false));assertEquals("ocean",prefs.getString("theme_preset",""));waitText("Give Spotify a new mood");android.os.SystemClock.sleep(2500);screenshot("13-theme-studio-ocean");

@@ -1,5 +1,10 @@
 # SpotEnhancer — next session
 
+## Current work: 0.16 Equalizer
+
+User narrowed all-feature request to Equalizer first. Adds independent default-off persisted switch, five presets/custom frequency bands, device gain limits, local positive-session Android effect and native audio listener reflection (no new DEX hook). See EQUALIZER.md. Five local tests pass; CI/build/private payload validation pending. No live Spotify audio success claimed. Previous 0.15 scope text below is historical.
+
+
 ## Current work: 0.15 Theme Studio
 
 User explicitly confirmed Playlist Creator works on their logged-in device, then requested global theming with presets. Current scope is Theme Studio only, not the other enhancement backlog. Creator and mixer stay functional.
