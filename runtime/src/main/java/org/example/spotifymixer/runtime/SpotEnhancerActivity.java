@@ -16,6 +16,9 @@ public final class SpotEnhancerActivity extends Activity {
     private final MixSession session=new MixSession(new NativeBridge());
     private String pending,title;
     private SharedPreferences prefs;
+    private String shownSelection;
+    private String selectionSignature(){return prefs.getString("a","")+"|"+prefs.getString("b","")+"|"+prefs.getInt("ratio",70)+"|"+prefs.getBoolean("shuffle",false);}
+    protected void onResume(){super.onResume();if(mixer&&shownSelection!=null&&!shownSelection.equals(selectionSignature()))showMixer();}
     public void onCreate(Bundle state){
         setTheme(android.R.style.Theme_Material_NoActionBar);super.onCreate(state);
         prefs=getSharedPreferences(Mixer.PREFS,0);
@@ -37,12 +40,12 @@ public final class SpotEnhancerActivity extends Activity {
         text(box,"TOOLS",14);LinearLayout tools=EnhancerTheme.card(box);text(tools,"Connection & diagnostics",20);text(tools,"Check the integration and troubleshoot problems.",15);button(tools,"Diagnostics",()->diagnostics());
     }
     private void showMixer(){
-        final int token=++generation;session.invalidate();mixer=true;
+        final int token=++generation;session.invalidate();mixer=true;shownSelection=selectionSignature();
         LinearLayout box=page("Playlist Mixer","Back to Spotify",()->returnToSpotify());
         if(pending!=null){text(box,title==null?"Selected playlist":title,20);button(box,"Use as Playlist A",()->save("a"));button(box,"Use as Playlist B",()->save("b"));}
         LinearLayout cardA=EnhancerTheme.card(box);text(cardA,"Playlist A",16);TextView aName=text(cardA,prefs.getString("a_title",prefs.contains("a")?"Selected playlist":"Not selected"),20);
         LinearLayout cardB=EnhancerTheme.card(box);text(cardB,"Playlist B",16);TextView bName=text(cardB,prefs.getString("b_title",prefs.contains("b")?"Selected playlist":"Not selected"),20);
-        Switch shuffle=new Switch(this);shuffle.setText("Shuffle mix");shuffle.setTextColor(0xffffffff);shuffle.setChecked(prefs.getBoolean("shuffle",false));shuffle.setPadding(0,16,0,16);box.addView(shuffle);
+        Switch shuffle=new Switch(this);shuffle.setText("Shuffle mix");shuffle.setTextColor(0xffffffff);shuffle.setThumbTintList(new android.content.res.ColorStateList(new int[][]{new int[]{android.R.attr.state_checked},new int[]{}},new int[]{EnhancerTheme.GREEN,EnhancerTheme.MUTED}));shuffle.setChecked(prefs.getBoolean("shuffle",false));shuffle.setPadding(0,16,0,16);box.addView(shuffle);
         TextView ratio=text(box,"",18);SeekBar slider=new SeekBar(this);slider.setProgressTintList(android.content.res.ColorStateList.valueOf(EnhancerTheme.GREEN));slider.setThumbTintList(android.content.res.ColorStateList.valueOf(EnhancerTheme.GREEN));slider.setMax(100);slider.setProgress(prefs.getInt("ratio",70));
         ratio.setText("A: "+slider.getProgress()+"%   B: "+(100-slider.getProgress())+"%");box.addView(slider);
         text(box,"Open a playlist in Spotify and tap Add to Mixer to select it.",16);
@@ -56,8 +59,8 @@ public final class SpotEnhancerActivity extends Activity {
         MixSession.Prepared[] prepared={null};
         Runnable allowLoad=()->load.setEnabled(NativeBridge.ready()&&PlaylistUri.normalize(prefs.getString("a",null))!=null&&PlaylistUri.normalize(prefs.getString("b",null))!=null);
         allowLoad.run();
-        shuffle.setOnCheckedChangeListener((button,checked)->{prefs.edit().putBoolean("shuffle",checked).apply();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Shuffle changed. Load the mix again.");});
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){ratio.setText("A: "+n+"%   B: "+(100-n)+"%");if(user){prefs.edit().putInt("ratio",n).apply();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Ratio changed. Load the mix again.");}}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
+        shuffle.setOnCheckedChangeListener((button,checked)->{prefs.edit().putBoolean("shuffle",checked).apply();shownSelection=selectionSignature();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Shuffle changed. Load the mix again.");});
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){ratio.setText("A: "+n+"%   B: "+(100-n)+"%");if(user){prefs.edit().putInt("ratio",n).apply();shownSelection=selectionSignature();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Ratio changed. Load the mix again.");}}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
         load.setOnClickListener(v->{
             load.setEnabled(false);start.setEnabled(false);slider.setEnabled(false);shuffle.setEnabled(false);chooseA.setEnabled(false);chooseB.setEnabled(false);prepared[0]=null;
             String a=prefs.getString("a",null),b=prefs.getString("b",null);int percent=slider.getProgress();boolean shuffled=shuffle.isChecked();

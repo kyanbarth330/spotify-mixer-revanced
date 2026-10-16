@@ -89,6 +89,16 @@ public class AndroidSmokeTest {
             }catch(ReflectiveOperationException error){throw new AssertionError(error);}});
         }
     }
+    @Test public void resumedMixerRefreshesReplacedSelections(){
+        context.getSharedPreferences(PREFS,0).edit().clear().putString("a","spotify:playlist:37i9dQZF1DXcBWIGoYBM5M").putString("a_title","Playlist Alpha").putString("b","spotify:playlist:37i9dQZF1DX0XUsuxWHRQd").putString("b_title","Playlist Beta").commit();
+        try(androidx.test.core.app.ActivityScenario<org.example.spotifymixer.runtime.SpotEnhancerActivity> scenario=androidx.test.core.app.ActivityScenario.launch(org.example.spotifymixer.runtime.SpotEnhancerActivity.class)){
+            waitText("Playlist Mixer").click();waitText("Playlist Alpha");
+            scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);
+            context.getSharedPreferences(PREFS,0).edit().putString("a","spotify:playlist:0000000000000000000001").putString("a_title","Playlist Gamma").putString("b","spotify:playlist:0000000000000000000002").putString("b_title","Playlist Delta").commit();
+            scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);
+            waitText("Playlist Gamma");waitText("Playlist Delta");assertFalse(waitText("Start Mix").isEnabled());
+        }
+    }
     @Test public void rejectsAmbiguousHeadings(){
         try(androidx.test.core.app.ActivityScenario<FixtureActivity> scenario=androidx.test.core.app.ActivityScenario.launch(FixtureActivity.class)){
             scenario.onActivity(activity->{
