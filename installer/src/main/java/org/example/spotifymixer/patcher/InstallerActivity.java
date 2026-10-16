@@ -18,7 +18,11 @@ import org.example.spotifymixer.engine.Patcher;
 
 /** One local APK-in / signed APK-out flow. Android owns the install confirmation. */
 public final class InstallerActivity extends Activity {
-    private TextView status;
+    private TextView status,terminal;
+    private ScrollView terminalScroll;
+    private ProgressBar progress;
+    private long logStart;
+    private final java.util.ArrayDeque<String> lines=new java.util.ArrayDeque<>();
     private Button select, install;
     private File signed;
     private volatile boolean busy;
@@ -40,6 +44,14 @@ public final class InstallerActivity extends Activity {
         install.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("Install patched Spotify")
             .setMessage("The certificate differs from original Spotify. Android may reject an update. Uninstalling Spotify removes local data and downloads. This installer never uninstalls apps automatically.")
             .setPositiveButton("Continue", (d,w) -> launchInstall()).setNegativeButton("Cancel", null).show());
+        LinearLayout logCard=EnhancerTheme.card(box);
+        EnhancerTheme.text(logCard,"Patch terminal",18,true);
+        progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setIndeterminate(true);progress.setVisibility(android.view.View.GONE);progress.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(EnhancerTheme.GREEN));logCard.addView(progress);
+        terminalScroll=new ScrollView(this);terminalScroll.setBackgroundColor(0xff080c09);
+        terminal=new TextView(this);terminal.setTextColor(0xff89efa8);terminal.setTextSize(12);terminal.setTypeface(android.graphics.Typeface.MONOSPACE);terminal.setTextIsSelectable(true);int pad=EnhancerTheme.dp(this,12);terminal.setPadding(pad,pad,pad,pad);
+        terminalScroll.addView(terminal);logCard.addView(terminalScroll,new LinearLayout.LayoutParams(-1,EnhancerTheme.dp(this,220)));
+        EnhancerTheme.button(logCard,"Copy log",false,()->{android.content.ClipboardManager clipboard=(android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE);clipboard.setPrimaryClip(android.content.ClipData.newPlainText("SpotEnhancer patch log",terminal.getText()));Toast.makeText(this,"Log copied",Toast.LENGTH_SHORT).show();});
+        logStart=android.os.SystemClock.elapsedRealtime();appendLog("[READY] Select an APK to begin. No patch has run yet.");
         EnhancerTheme.text(box,"Independent project · not affiliated with Spotify",12,false);
         // Never offer an output left by an interrupted or previous session without verification.
         signed.delete();
@@ -53,6 +65,7 @@ public final class InstallerActivity extends Activity {
         }
         if (req == 102) { if (android.os.Build.VERSION.SDK_INT >= 26 && getPackageManager().canRequestPackageInstalls()) launchInstall(); return; }
         if (req != 101 || result != RESULT_OK || data == null || data.getData() == null || busy) return;
+        lines.clear();terminal.setText("");logStart=android.os.SystemClock.elapsedRealtime();progress.setVisibility(android.view.View.VISIBLE);
         busy = true; select.setEnabled(false); install.setEnabled(false); signed.delete();
         Uri uri = data.getData();
         new Thread(() -> build(uri), "mixer-build").start();
@@ -67,10 +80,11 @@ public final class InstallerActivity extends Activity {
             try (InputStream in = getContentResolver().openInputStream(uri)) { copy(in,input,300L*1024*1024); }
             try (InputStream in = getAssets().open("mixer-runtime.zip")) { copy(in,runtime,16L*1024*1024); }
             update("Verifying input and building SpotEnhancer…");
-            Patcher.patch(input,runtime,unsigned);
+            Patcher.patch(input,runtime,unsigned,this::appendLog);
             update("Signing and verifying output…");
             KeyStore store = KeyStore.getInstance("AndroidKeyStore"); store.load(null);
             String alias = "spotify-mixer-v1";
+            appendLog("[KEY] Preparing device-local Android Keystore signing key");
             if (!store.containsAlias(alias)) {
                 KeyPairGenerator generator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA,"AndroidKeyStore");
                 generator.initialize(new KeyGenParameterSpec.Builder(alias,KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
@@ -79,7 +93,7 @@ public final class InstallerActivity extends Activity {
                 generator.generateKeyPair();
             }
             signed.getParentFile().mkdirs();
-            Patcher.sign(unsigned,signed,(PrivateKey)store.getKey(alias,null),(X509Certificate)store.getCertificate(alias));
+            Patcher.sign(unsigned,signed,(PrivateKey)store.getKey(alias,null),(X509Certificate)store.getCertificate(alias),this::appendLog);
             String hash = Patcher.hash(signed);
             update("SpotEnhancer added; APK built and cryptographically verified.\nSHA-256: " + hash + "\nOpen Spotify after installation to verify the new screens.");
             runOnUiThread(() -> install.setEnabled(true));
@@ -87,7 +101,7 @@ public final class InstallerActivity extends Activity {
             signed.delete(); update("Build failed: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
         } finally {
             input.delete(); runtime.delete(); unsigned.delete(); busy=false;
-            runOnUiThread(() -> select.setEnabled(true));
+            runOnUiThread(() -> {select.setEnabled(true);progress.setVisibility(android.view.View.GONE);});
         }
     }
     private void launchInstall() {
@@ -102,7 +116,17 @@ public final class InstallerActivity extends Activity {
             startActivityForResult(intent,103);
         } catch (Exception ex) { update("Could not start installation: " + ex.getMessage()); }
     }
-    private void update(String text) { runOnUiThread(() -> status.setText(text)); }
+    private void update(String text) { runOnUiThread(() -> status.setText(text));appendLog(text.startsWith("Build failed")?"[ERROR] "+text:"[INFO] "+text); }
+    private void appendLog(String text){
+        long elapsed=android.os.SystemClock.elapsedRealtime()-logStart;
+        String line=String.format(java.util.Locale.ROOT,"[%02d:%02d] %s",elapsed/60000,(elapsed/1000)%60,text);
+        runOnUiThread(()->{
+            boolean follow=terminalScroll.getChildAt(0).getHeight()<=terminalScroll.getHeight()+terminalScroll.getScrollY()+EnhancerTheme.dp(this,24);
+            lines.addLast(line);while(lines.size()>200)lines.removeFirst();
+            StringBuilder content=new StringBuilder();for(String item:lines)content.append(item).append('\n');terminal.setText(content.toString());
+            if(follow)terminalScroll.post(()->terminalScroll.fullScroll(android.view.View.FOCUS_DOWN));
+        });
+    }
     private static void copy(InputStream in, File file, long limit) throws IOException {
         if (in == null) throw new IOException("File is not readable");
         try (OutputStream out = new FileOutputStream(file)) { byte[] b = new byte[65536]; int n; long total=0;

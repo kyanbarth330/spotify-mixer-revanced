@@ -15,6 +15,7 @@ import java.io.*;
 import java.security.*;
 import java.security.cert.X509Certificate;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.zip.*;
 
 /** Exact-input, UI-only patch; shared by Android and the local validation harness. */
@@ -61,7 +62,8 @@ public final class Patcher {
         DexPool.writeTo(store, new ImmutableDexFile(dex.getOpcodes(), classes));
         return store.getData();
     }
-    public static List<byte[]> validateRuntime(File runtime) throws Exception {
+    public static List<byte[]> validateRuntime(File runtime) throws Exception { return validateRuntime(runtime, message -> {}); }
+    public static List<byte[]> validateRuntime(File runtime, Consumer<String> log) throws Exception {
         List<byte[]> payloads = new ArrayList<>();
         try (InputStream in = new FileInputStream(runtime)) {
             if (in.read() == 'd') {
@@ -82,7 +84,9 @@ public final class Patcher {
         }
         boolean attach = false;
         Set<String> types = new HashSet<>();
+        int dexIndex=0;
         for (byte[] bytes : payloads) {
+            log.accept("[CHECK] runtime/"+(dexIndex++==0?"classes.dex":"classes"+dexIndex+".dex"));
             DexBackedDexFile dex = new DexBackedDexFile(Opcodes.forApi(24), bytes);
             for (ClassDef cls : dex.getClasses()) {
                 if (!(cls.getType().startsWith("Lorg/example/spotifymixer/runtime/") || cls.getType().startsWith("Lorg/example/spotifymixer/ui/")) || !types.add(cls.getType()))
@@ -97,20 +101,30 @@ public final class Patcher {
             }
         }
         if (!attach) throw new IOException("Runtime missing Mixer.attach(Activity); build stopped");
+        log.accept("[OK] Runtime validated: "+payloads.size()+" DEX, "+types.size()+" unique classes");
         return payloads;
     }
     public static void patch(File input, File runtime, File unsigned) throws Exception {
+        patch(input,runtime,unsigned,message -> {});
+    }
+    public static void patch(File input, File runtime, File unsigned, Consumer<String> log) throws Exception {
+        log.accept("[CHECK] Input SHA-256 and original APK signature");
         validate(input);
-        List<byte[]> runtimeDex = validateRuntime(runtime);
+        log.accept("[OK] Supported Spotify APK verified");
+        List<byte[]> runtimeDex = validateRuntime(runtime,log);
         try (ZipFile zip = new ZipFile(input)) {
             byte[] patched;
             byte[][] playlist;
             byte[] manifest;
+            log.accept("[PATCH] classes.dex · playlist lifecycle hook");
             try (InputStream in = zip.getInputStream(zip.getEntry("classes.dex"))) { playlist = PlaylistHook.patch(read(in)); }
+            log.accept("[PATCH] AndroidManifest.xml · private SpotEnhancer Activity");
             try (InputStream in = zip.getInputStream(zip.getEntry("AndroidManifest.xml"))) { manifest = ManifestEditor.addActivity(read(in)); }
+            log.accept("[PATCH] classes2.dex · SpotifyMainActivity.onResume");
             try (InputStream in = zip.getInputStream(zip.getEntry("classes2.dex"))) { patched = hook(read(in)); }
             for (int i = 0; i < runtimeDex.size()+1; i++)
                 if (zip.getEntry("classes" + (18+i) + ".dex") != null) throw new IOException("Runtime DEX slot already occupied");
+            log.accept("[BUILD] Rebuilding APK · preserve resources/native libraries · 16 KiB alignment");
             try (CountOutput counter = new CountOutput(new FileOutputStream(unsigned)); ZipOutputStream out = new ZipOutputStream(counter)) {
                 Enumeration<? extends ZipEntry> entries = zip.entries();
                 byte[] buffer = new byte[65536];
@@ -120,9 +134,9 @@ public final class Patcher {
                     if (upper.startsWith("META-INF/") && (upper.endsWith(".RSA") || upper.endsWith(".DSA") || upper.endsWith(".EC") || upper.endsWith(".SF") || upper.equals("META-INF/MANIFEST.MF"))) continue;
                     // Source stamp identifies the original distribution and is invalid after modification.
                     if (name.equals("stamp-cert-sha256")) continue;
-                    if (name.equals("classes.dex")) { put(out, name, playlist[0]); continue; }
-                    if (name.equals("AndroidManifest.xml")) { put(out, name, manifest); continue; }
-                    if (name.equals("classes2.dex")) { put(out, name, patched); continue; }
+                    if (name.equals("classes.dex")) { put(out, name, playlist[0]); log.accept("[OK] classes.dex patched"); continue; }
+                    if (name.equals("AndroidManifest.xml")) { put(out, name, manifest); log.accept("[OK] AndroidManifest.xml patched"); continue; }
+                    if (name.equals("classes2.dex")) { put(out, name, patched); log.accept("[OK] classes2.dex patched"); continue; }
                     ZipEntry entry = new ZipEntry(name); entry.setTime(315532800000L);
                     if (old.getMethod() == ZipEntry.STORED) {
                         entry.setMethod(ZipEntry.STORED); entry.setSize(old.getSize()); entry.setCrc(old.getCrc());
@@ -136,20 +150,26 @@ public final class Patcher {
                     out.putNextEntry(entry);
                     try (InputStream in = zip.getInputStream(old)) { int n; while ((n=in.read(buffer))!=-1) out.write(buffer,0,n); }
                     out.closeEntry();
+                    if(name.matches("classes([0-9]+)?\\.dex"))log.accept("[KEEP] "+name+" unchanged");
                 }
-                for (int i = 0; i < runtimeDex.size(); i++) put(out, "classes" + (18+i) + ".dex", runtimeDex.get(i));
+                for (int i = 0; i < runtimeDex.size(); i++) {String name="classes"+(18+i)+".dex";put(out,name,runtimeDex.get(i));log.accept("[ADD] "+name+" · SpotEnhancer runtime");}
                 put(out, "classes" + (18+runtimeDex.size()) + ".dex", playlist[1]);
+                log.accept("[ADD] classes"+(18+runtimeDex.size())+".dex · relocated playlist hook");
             }
-        } catch (Exception e) { unsigned.delete(); throw e; }
+        } catch (Exception e) { log.accept("[ERROR] Patching stopped: "+e.getClass().getSimpleName());unsigned.delete(); throw e; }
     }
-    public static void sign(File unsigned, File signed, PrivateKey key, X509Certificate cert) throws Exception {
+    public static void sign(File unsigned, File signed, PrivateKey key, X509Certificate cert) throws Exception {sign(unsigned,signed,key,cert,message -> {});}
+    public static void sign(File unsigned, File signed, PrivateKey key, X509Certificate cert, Consumer<String> log) throws Exception {
         try {
+            log.accept("[SIGN] APK Signature Scheme v2 + v3");
             ApkSigner.SignerConfig config = new ApkSigner.SignerConfig.Builder("mixer", key, Collections.singletonList(cert)).build();
             new ApkSigner.Builder(Collections.singletonList(config)).setInputApk(unsigned).setOutputApk(signed)
                 .setMinSdkVersion(24).setV1SigningEnabled(false).setV2SigningEnabled(true).setV3SigningEnabled(true).setV4SigningEnabled(false).build().sign();
+            log.accept("[CHECK] Signed APK integrity and signature");
             ApkVerifier.Result result = new ApkVerifier.Builder(signed).setMinCheckedPlatformVersion(24).build().verify();
             if (!result.isVerified() || !result.isVerifiedUsingV2Scheme()) throw new IOException("Invalid output signature: " + result.getErrors());
-        } catch (Exception e) { signed.delete(); throw e; }
+            log.accept("[OK] Output signature verified");
+        } catch (Exception e) { log.accept("[ERROR] Signing/verification stopped");signed.delete(); throw e; }
     }
     private static byte[] read(InputStream in) throws IOException { ByteArrayOutputStream out = new ByteArrayOutputStream(); byte[] b = new byte[65536]; int n; while ((n=in.read(b))!=-1) out.write(b,0,n); return out.toByteArray(); }
     private static void put(ZipOutputStream out, String name, byte[] bytes) throws IOException { ZipEntry e = new ZipEntry(name); e.setTime(315532800000L); out.putNextEntry(e); out.write(bytes); out.closeEntry(); }

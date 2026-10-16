@@ -85,6 +85,9 @@ public class AndroidSmokeTest {
             waitText("SpotEnhancer");waitText("1. Select APK and build SpotEnhancer");
             assertFalse(waitText("2. Install patched Spotify").isEnabled());
             screenshot("06-installer-initial-state");
+            waitText("Copy log");
+            assertNotNull(device.findObject(By.textContains("[READY] Select an APK to begin. No patch has run yet.")));
+            screenshot("07-installer-terminal-ready");
         }finally{device.pressHome();}
     }
     @Test public void signOwnFixtureWithAndroidKeystore()throws Exception{
@@ -94,7 +97,10 @@ public class AndroidSmokeTest {
         try{
             KeyPairGenerator gen=KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA,"AndroidKeyStore");
             gen.initialize(new KeyGenParameterSpec.Builder(alias,KeyProperties.PURPOSE_SIGN|KeyProperties.PURPOSE_VERIFY).setKeySize(2048).setDigests(KeyProperties.DIGEST_SHA256,KeyProperties.DIGEST_SHA512).setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1).build());gen.generateKeyPair();
-            Patcher.sign(new File(context.getApplicationInfo().sourceDir),signed,(PrivateKey)store.getKey(alias,null),(X509Certificate)store.getCertificate(alias));
+            java.util.List<String> events=new java.util.ArrayList<>();
+            Patcher.sign(new File(context.getApplicationInfo().sourceDir),signed,(PrivateKey)store.getKey(alias,null),(X509Certificate)store.getCertificate(alias),events::add);
+            assertEquals("[SIGN] APK Signature Scheme v2 + v3",events.get(0));
+            assertEquals("[OK] Output signature verified",events.get(events.size()-1));
             ApkVerifier.Result result=new ApkVerifier.Builder(signed).setMinCheckedPlatformVersion(24).build().verify();assertTrue(result.isVerified());assertTrue(result.isVerifiedUsingV2Scheme());assertTrue(result.isVerifiedUsingV3Scheme());
         }finally{signed.delete();store.deleteEntry(alias);}
     }

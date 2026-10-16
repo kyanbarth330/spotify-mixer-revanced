@@ -63,7 +63,11 @@ public class PatcherTest {
                 out.putNextEntry(new java.util.zip.ZipEntry("classes.dex")); out.write(runtimeClass("Lorg/example/spotifymixer/runtime/R;",false)); out.closeEntry();
                 out.putNextEntry(new java.util.zip.ZipEntry("classes2.dex")); out.write(runtimeClass("Lorg/example/spotifymixer/runtime/Mixer;",true)); out.closeEntry();
             }
-            assertEquals(2,Patcher.validateRuntime(f).size());
+            List<String> events=new ArrayList<>();
+            assertEquals(2,Patcher.validateRuntime(f,events::add).size());
+            assertEquals("[CHECK] runtime/classes.dex",events.get(0));
+            assertEquals("[CHECK] runtime/classes2.dex",events.get(1));
+            assertTrue(events.get(2).startsWith("[OK] Runtime validated:"));
         } finally { f.delete(); }
     }
     private void checkPayload(String extra, boolean reject) throws Exception {
@@ -83,5 +87,15 @@ public class PatcherTest {
     }
     @Test public void duplicateRuntimeClassRejected() throws Exception {checkPayload("Lorg/example/spotifymixer/runtime/Mixer;",true);}
     @Test public void unrelatedPackageRejected() throws Exception {checkPayload("Lunrelated/Helper;",true);}
+
+    @Test public void failedValidationDoesNotLogPatchSuccess() throws Exception {
+        File input=File.createTempFile("unsupported", ".apk"),output=File.createTempFile("unsigned", ".apk");
+        List<String> events=new ArrayList<>();
+        try{
+            try{Patcher.patch(input,input,output,events::add);fail("accepted invalid APK");}
+            catch(IOException expected){assertTrue(expected.getMessage().contains("SHA-256"));}
+            assertEquals(Collections.singletonList("[CHECK] Input SHA-256 and original APK signature"),events);
+        }finally{input.delete();output.delete();}
+    }
 
 }

@@ -11,7 +11,7 @@ public final class InstallerPayloadValidation {
             ZipEntry entry=apk.getEntry("assets/mixer-runtime.zip");
             if(entry==null)throw new IOException("Missing runtime asset");
             try(InputStream in=apk.getInputStream(entry)){Files.copy(in,payload.toPath(),java.nio.file.StandardCopyOption.REPLACE_EXISTING);}
-            System.out.println("PASS: patcher accepts delivered runtime: "+Patcher.validateRuntime(payload).size()+" DEX files");
+            System.out.println("PASS: patcher accepts delivered runtime: "+Patcher.validateRuntime(payload,System.out::println).size()+" DEX files");
         }finally{payload.delete();}
     }
 }
