@@ -40,13 +40,15 @@ public final class Mixer {
         for(Map.Entry<View,java.lang.ref.WeakReference<Object>> entry:new ArrayList<>(contexts.entrySet())){
             View root=entry.getKey();if(root==null || !root.isAttachedToWindow() || !root.isShown() || !root.getGlobalVisibleRect(new android.graphics.Rect()))continue;
             Object fragment=entry.getValue().get();if(fragment==null)continue;
-            String[] value;
-            try{Field args=Class.forName("p.gs10",false,fragment.getClass().getClassLoader()).getDeclaredField("f");args.setAccessible(true);Bundle bundle=(Bundle)args.get(fragment);if(bundle==null)continue;String uri=PlaylistUri.fromBundle(bundle);if(uri==null)continue;String title=PlaylistTitle.from(bundle,root);value=new String[]{uri,title==null?"Selected playlist":title};}catch(ReflectiveOperationException|RuntimeException error){continue;}
-            if("Selected playlist".equals(value[1])){String title=PlaylistTitle.visibleHeading(root);if(title!=null)value[1]=title;}
+            String[] value=readPlaylist(root,fragment);if(value==null)continue;
             if(selected!=null && !selected[0].equals(value[0]))return null;
             selected=value;
         }
         return selected;
+    }
+    static String[] readPlaylist(View root,Object fragment){return readPlaylist(root,fragment,true);}
+    static String[] readPlaylist(View root,Object fragment,boolean withTitle){
+        try{Field args=Class.forName("p.gs10",false,fragment.getClass().getClassLoader()).getDeclaredField("f");args.setAccessible(true);Bundle bundle=(Bundle)args.get(fragment);if(bundle==null)return null;String uri=PlaylistUri.fromBundle(bundle);if(uri==null)return null;String title=withTitle?PlaylistTitle.from(bundle,root):null;return new String[]{uri,title==null?"Selected playlist":title};}catch(ReflectiveOperationException|RuntimeException error){return null;}
     }
     public static void fragmentResumed(Object manager) {
         try {
@@ -59,13 +61,14 @@ public final class Mixer {
             Diagnostics.event("Fragment "+fragment.getClass().getName()+" root="+root.getClass().getName()+" keys="+new ArrayList<>(bundle.keySet()));
             String uri=PlaylistUri.fromBundle(bundle);
             if(uri==null){
-                contexts.remove(root);
+                contexts.remove(root);PlaylistAction.remove(root);
                 Diagnostics.event(PageParameters.describe(bundle.get("parameters")));
                 Diagnostics.event("No unambiguous playlist identity");return;
             }
             String title=PlaylistTitle.from(bundle,root);
             if(title==null)title="Selected playlist";
-            contexts.put(root,new java.lang.ref.WeakReference<>(fragment));Diagnostics.event("Playlist context captured");
+            java.lang.ref.WeakReference<Object> captured=new java.lang.ref.WeakReference<>(fragment);contexts.put(root,captured);
+            root.post(()->{if(contexts.get(root)==captured)PlaylistAction.attach(root,captured);});Diagnostics.event("Playlist context captured");
         }catch(ReflectiveOperationException | RuntimeException | LinkageError error){Diagnostics.event("Hook error: "+error.getClass().getSimpleName());Log.w("SpotEnhancer","Playlist context unavailable",error);}
     }
     static void launchMixer(Activity a){a.startActivity(new Intent().setClassName(a.getPackageName(),SpotEnhancerActivity.class.getName()).putExtra("from_spotify",true).putExtra("screen","mixer"));}

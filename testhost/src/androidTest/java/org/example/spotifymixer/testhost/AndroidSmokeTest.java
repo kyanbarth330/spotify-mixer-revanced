@@ -51,7 +51,7 @@ public class AndroidSmokeTest {
         try{
             tools();assertFalse(device.hasObject(By.text("Add to Mixer")));screenshot("01-floating-tools-fixture");tools().click();
             waitText("Playlist Mixer");screenshot("02-feature-panel");UiObject2 search=device.findObject(By.clazz("android.widget.EditText"));assertNotNull(search);search.setText("history");device.waitForIdle();waitText("Mix History");assertFalse(device.hasObject(By.text("Playlist Mixer")));search.setText("");waitText("Playlist Mixer").click();
-            for(String title:new String[]{"Playlist Alpha","Playlist Beta","Playlist Gamma"}){waitText("+  Add playlist").click();waitText("Test library");waitText(title).click();tools().click();waitText("Sources");waitText(title);}
+            for(String title:new String[]{"Playlist Alpha","Playlist Beta","Playlist Gamma"}){waitText("+  Add playlist").click();waitText("Test library");waitText(title).click();waitText("Add to Mixer").click();waitText("Sources");waitText(title);}
             org.example.spotifymixer.runtime.MixLibrary library=new org.example.spotifymixer.runtime.MixLibrary(context.getSharedPreferences(PREFS,0));
             assertEquals(3,library.active().sources.size());
             UiObject2 slider=device.findObject(By.desc("Weight for Playlist Alpha"));assertNotNull(slider);Rect bounds=slider.getVisibleBounds();device.click(bounds.left+bounds.width()/2,bounds.centerY());device.waitForIdle();
@@ -66,6 +66,13 @@ public class AndroidSmokeTest {
             device.findObject(By.desc("Back to SpotEnhancer")).click();waitText("Mix Presets").click();waitText("Morning blend");screenshot("05-saved-presets");
             waitText("Use preset").click();waitText("Playlist Alpha");waitText("Playlist Gamma");
             waitText("‹  Back to Spotify").click();waitText("Playlist Gamma");tools();
+        }finally{device.pressHome();}
+    }
+    @Test public void playlistPageActionAddsDirectlyAndDeduplicates()throws Exception{
+        context.getSharedPreferences(PREFS,0).edit().clear().commit();context.startActivity(new Intent(context,FixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        try{waitText("Test library");assertFalse(device.hasObject(By.text("Add to Mixer")));waitText("Playlist Alpha").click();waitText("Add to Mixer");screenshot("09-playlist-page-add-action");waitText("Add to Mixer").click();waitText("Sources");
+            org.example.spotifymixer.runtime.MixLibrary library=new org.example.spotifymixer.runtime.MixLibrary(context.getSharedPreferences(PREFS,0));assertEquals(1,library.active().sources.size());
+            waitText("‹  Back to Spotify").click();waitText("Add to Mixer").click();waitText("Sources");assertEquals(1,library.active().sources.size());waitText("‹  Back to Spotify").click();waitText("Return to test library").click();waitText("Test library");device.waitForIdle();assertFalse(device.hasObject(By.text("Add to Mixer")));
         }finally{device.pressHome();}
     }
     @Test public void reusedFragmentReadsReplacementArguments()throws Exception{
