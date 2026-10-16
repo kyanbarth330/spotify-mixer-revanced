@@ -1,6 +1,7 @@
 package org.example.spotifymixer.patcher;
 
 import android.app.Activity;
+import org.example.spotifymixer.ui.EnhancerTheme;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.content.Intent;
@@ -22,22 +23,24 @@ public final class InstallerActivity extends Activity {
     private File signed;
     private volatile boolean busy;
     public void onCreate(Bundle state) {
-        super.onCreate(state);
+        setTheme(android.R.style.Theme_Material_NoActionBar);super.onCreate(state);
         signed = new File(new File(getFilesDir(), "output"), "spotify-mixer.apk");
-        LinearLayout box = new LinearLayout(this); box.setOrientation(1); box.setPadding(32,48,32,24);
-        TextView title = new TextView(this); title.setText("SpotEnhancer Installer"); title.setTextSize(24); box.addView(title);
-        status = new TextView(this);
-        status.setText("Select the supported Spotify 9.1.90.2270 APK. Build SpotEnhancer locally, then install it. At least 1 GB of free storage is required. Playback mixing is not available yet."); box.addView(status);
-        select = new Button(this); select.setText("1. Select APK and build SpotEnhancer"); box.addView(select);
+        LinearLayout box=EnhancerTheme.page(this,"SpotEnhancer");
+        EnhancerTheme.text(box,"INSTALLER · 0.7",13,true);
+        EnhancerTheme.text(box,"Your music. Your experience.",22,true);
+        LinearLayout card=EnhancerTheme.card(box);
+        EnhancerTheme.text(card,"Build on your device",20,true);
+        status=EnhancerTheme.text(card,"Select the supported Spotify 9.1.90.2270 APK. Your APK is processed locally. At least 1 GB of free storage is required. Playback mixing is not available yet.",15,false);
+        select=EnhancerTheme.button(box,"1. Select APK and build SpotEnhancer",true,()->{});
         select.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE);
             startActivityForResult(intent, 101);
         });
-        install = new Button(this); install.setText("2. Install patched Spotify"); install.setEnabled(false); box.addView(install);
+        install=EnhancerTheme.button(box,"2. Install patched Spotify",false,()->{});install.setEnabled(false);
         install.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("Install patched Spotify")
             .setMessage("The certificate differs from original Spotify. Android may reject an update. Uninstalling Spotify removes local data and downloads. This installer never uninstalls apps automatically.")
             .setPositiveButton("Continue", (d,w) -> launchInstall()).setNegativeButton("Cancel", null).show());
-        setContentView(box);
+        EnhancerTheme.text(box,"Independent project · not affiliated with Spotify",12,false);
         // Never offer an output left by an interrupted or previous session without verification.
         signed.delete();
     }

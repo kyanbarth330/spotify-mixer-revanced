@@ -1,6 +1,7 @@
 package org.example.spotifymixer.runtime;
 
 import android.app.Activity;
+import org.example.spotifymixer.ui.EnhancerTheme;
 import android.content.Intent;
 import android.os.*;
 import android.graphics.Color;
@@ -25,10 +26,8 @@ public final class SpotEnhancerActivity extends Activity {
     public void onBackPressed(){back();}
     private void back(){if(mixer && pending==null)home();else finish();}
     private LinearLayout page(String heading,String back,Runnable action){
-        LinearLayout box=new LinearLayout(this);box.setOrientation(1);box.setBackgroundColor(0xff121212);box.setPadding(24,24,24,24);
-        box.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(24+insets.getSystemWindowInsetLeft(),24+insets.getSystemWindowInsetTop(),24+insets.getSystemWindowInsetRight(),24+insets.getSystemWindowInsetBottom());return insets;});
-        Button button=new Button(this);button.setText(back);button.setAllCaps(false);button.setOnClickListener(v->action.run());box.addView(button);
-        text(box,heading,30);ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.addView(box,new ScrollView.LayoutParams(-1,-2));setContentView(scroll);box.requestApplyInsets();return box;
+        LinearLayout box=EnhancerTheme.page(this,heading);
+        EnhancerTheme.button(box,back,false,action);return box;
     }
     private void home(){mixer=false;LinearLayout box=page("SpotEnhancer","Back to Spotify",()->returnToSpotify());
         text(box,"Make Spotify your own.",16);
@@ -38,9 +37,9 @@ public final class SpotEnhancerActivity extends Activity {
     private void showMixer(){mixer=true;LinearLayout box=page("Playlist Mixer","Back to Spotify",()->returnToSpotify());
         if(pending!=null){text(box,title==null?"Selected playlist":title,20);
             button(box,"Use as Playlist A",()->save("a"));button(box,"Use as Playlist B",()->save("b"));}
-        text(box,"Playlist A",16);text(box,prefs.getString("a_title",PlaylistUri.normalize(prefs.getString("a",""))==null?"Not selected":"Selected playlist"),20);
-        text(box,"Playlist B",16);text(box,prefs.getString("b_title",PlaylistUri.normalize(prefs.getString("b",""))==null?"Not selected":"Selected playlist"),20);
-        TextView ratio=text(box,"",18);SeekBar slider=new SeekBar(this);slider.setMax(100);slider.setProgress(prefs.getInt("ratio",70));
+        LinearLayout cardA=EnhancerTheme.card(box);text(cardA,"Playlist A",16);text(cardA,prefs.getString("a_title",PlaylistUri.normalize(prefs.getString("a",""))==null?"Not selected":"Selected playlist"),20);
+        LinearLayout cardB=EnhancerTheme.card(box);text(cardB,"Playlist B",16);text(cardB,prefs.getString("b_title",PlaylistUri.normalize(prefs.getString("b",""))==null?"Not selected":"Selected playlist"),20);
+        TextView ratio=text(box,"",18);SeekBar slider=new SeekBar(this);slider.setProgressTintList(android.content.res.ColorStateList.valueOf(EnhancerTheme.GREEN));slider.setThumbTintList(android.content.res.ColorStateList.valueOf(EnhancerTheme.GREEN));slider.setMax(100);slider.setProgress(prefs.getInt("ratio",70));
         ratio.setText("A: "+slider.getProgress()+"%   B: "+(100-slider.getProgress())+"%");
         slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){ratio.setText("A: "+n+"%   B: "+(100-n)+"%");if(user)prefs.edit().putInt("ratio",n).apply();}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});box.addView(slider);
         text(box,"Choose a playlist below, then tap Add to Mixer in Spotify. No URL entry or share sheet is needed.",16);
@@ -66,6 +65,6 @@ public final class SpotEnhancerActivity extends Activity {
         finish();
     }
     private void save(String slot){prefs.edit().remove("pending_slot").putString(slot,pending).putString(slot+"_title",title==null?"Selected playlist":title).apply();pending=null;showMixer();Toast.makeText(this,"Playlist "+slot.toUpperCase(java.util.Locale.ROOT)+" selected",Toast.LENGTH_SHORT).show();}
-    private TextView text(LinearLayout box,String value,int size){TextView t=new TextView(this);t.setText(value);t.setTextColor(Color.WHITE);t.setTextSize(size);t.setPadding(0,12,0,12);box.addView(t);return t;}
-    private void button(LinearLayout box,String label,Runnable action){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setOnClickListener(v->action.run());box.addView(b);}
+    private TextView text(LinearLayout box,String value,int size){return EnhancerTheme.text(box,value,size,size>=20);}
+    private void button(LinearLayout box,String label,Runnable action){EnhancerTheme.button(box,label,label.startsWith("Choose") || label.equals("Playlist Mixer"),action);}
 }

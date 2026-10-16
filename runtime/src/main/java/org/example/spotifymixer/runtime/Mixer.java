@@ -1,6 +1,7 @@
 package org.example.spotifymixer.runtime;
 
 import android.app.Activity;
+import org.example.spotifymixer.ui.EnhancerTheme;
 import android.content.*;
 import android.os.Bundle;
 import android.util.Log;
@@ -26,6 +27,7 @@ public final class Mixer {
                 LinearLayout row=new LinearLayout(activity);row.setTag(ROW);row.setOrientation(0);row.setBackgroundColor(0xff121212);
                 Button open=new Button(activity);open.setText("SpotEnhancer");open.setAllCaps(false);
                 Button add=new Button(activity);add.setAllCaps(false);add.setText("Add to Mixer");
+                EnhancerTheme.styleButton(open,false);EnhancerTheme.styleButton(add,true);
                 row.addView(open,new LinearLayout.LayoutParams(0,-1,1));row.addView(add,new LinearLayout.LayoutParams(0,-1,1));
                 open.setOnClickListener(v -> launch(activity,null,null));
                 add.setOnClickListener(v -> {

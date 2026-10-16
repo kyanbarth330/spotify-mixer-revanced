@@ -6,6 +6,7 @@ on:
       - 'installer/**'
       - 'engine/**'
       - 'runtime/**'
+      - 'shared-ui/**'
       - 'tools/**'
       - 'settings.gradle'
       - 'build.gradle'

@@ -3,7 +3,7 @@ package org.example.spotifymixer.testhost;
 import android.content.*;
 import android.graphics.Rect;
 import android.security.keystore.*;
-import androidx.test.core.app.ActivityScenario;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.*;
@@ -32,7 +32,8 @@ public class AndroidSmokeTest {
     private void screenshot(String name){device.waitForIdle();File dir=context.getExternalFilesDir("screenshots");assertNotNull(dir);dir.mkdirs();assertTrue(device.takeScreenshot(new File(dir,name+".png")));}
     @Test public void selectTwoPlaylistsAndNavigateBack()throws Exception{
         context.getSharedPreferences(PREFS,0).edit().clear().commit();
-        try(ActivityScenario<FixtureActivity> scenario=ActivityScenario.launch(FixtureActivity.class)){
+        context.startActivity(new Intent(context,FixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        try{
             waitText("SpotEnhancer");screenshot("01-native-entry-fixture");
             waitText("SpotEnhancer").click();waitText("Playlist Mixer");screenshot("02-spotenhancer-home");
             waitText("Playlist Mixer").click();waitText("Choose Playlist A").click();
@@ -49,7 +50,7 @@ public class AndroidSmokeTest {
             screenshot("03-playlist-mixer-two-selections");
             waitText("Back to SpotEnhancer").click();waitText("Diagnostics").click();waitText("Diagnostics");screenshot("04-diagnostics");
             waitText("Back to Spotify").click();waitText("Playlist Beta");waitText("SpotEnhancer");screenshot("05-return-to-fixture");
-        }
+        }finally{device.pressHome();}
     }
     @Test public void signOwnFixtureWithAndroidKeystore()throws Exception{
         String alias="spotenhancer-emulator-test";

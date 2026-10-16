@@ -4,7 +4,9 @@ on:
   push:
     paths:
       - 'testhost/**'
+      - 'tools/run_emulator_smoke.sh'
       - 'runtime/**'
+      - 'shared-ui/**'
       - 'engine/**'
       - 'settings.gradle'
       - '.github/workflows/android-smoke.yml'
@@ -38,9 +40,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           script: |
-            mkdir -p emulator-evidence
-            trap 'adb pull /sdcard/Android/data/org.example.spotifymixer.testhost/files/screenshots emulator-evidence/; adb logcat -d -v time > emulator-evidence/logcat.txt' EXIT
-            gradle :testhost:connectedDebugAndroidTest --no-daemon
+            bash tools/run_emulator_smoke.sh
       - name: Preserve own-code test evidence
         if: always()
         uses: actions/upload-artifact@v4

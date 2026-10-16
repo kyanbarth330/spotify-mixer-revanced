@@ -2,12 +2,13 @@ plugins { id 'com.android.application' }
 android {
     namespace 'org.example.spotifymixer.patcher'
     compileSdk 35
+    sourceSets.main.java.srcDir('../shared-ui/src/main/java')
     defaultConfig {
         applicationId 'org.example.spotifymixer.patcher'
         minSdk 24
         targetSdk 28
-        versionCode 6
-        versionName '0.6'
+        versionCode 7
+        versionName '0.7'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

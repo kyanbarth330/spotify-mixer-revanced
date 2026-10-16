@@ -2,6 +2,7 @@ plugins { id 'com.android.application' }
 android {
     namespace 'org.example.spotifymixer.testhost'
     compileSdk 35
+    sourceSets.main.java.srcDir('../shared-ui/src/main/java')
     defaultConfig {
         applicationId 'org.example.spotifymixer.testhost'
         minSdk 24
