@@ -2,9 +2,17 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.10](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38881099426/artifacts/12038190296)
+## [Download SpotEnhancer 0.11](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38885593406/artifacts/12039133945)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
+
+## Version 0.11 — concept-style tools panel and full mixes
+
+A green wrench replaces the two top buttons and opens the new in-app panel: search, categories, Playlist Mixer, Mix Presets, Mix History and Diagnostics. The panel follows the approved visual concept with a dark translucent surface, compact cards, line icons and green controls. Abstract source artwork is original placeholder art, not fetched playlist covers.
+
+The mixer supports multiple different playlists, automatic percentage balancing, replacement/removal and saved shuffle. **Load mix** reads the full included playlists; **Start Mix** appears after successful preparation. There is no 100-track output cap. Percentages guide the unshuffled order until sources run out; all their unique tracks are included. Spotify shuffle randomizes that order. Large native-player commands still require device verification and failures are reported without silently shortening the mix.
+
+Presets store configurations. History records accepted requests and reloads current playlist contents, without autoplay. Old A/B selections migrate. See [behavior and limits](docs/NATIVE_MIXER.md) and [validation](docs/VALIDATION.md). Spotify queue restoration after restart and the native overflow-menu row remain unfinished.
 
 ## Version 0.10 — refreshed selections and saved shuffle
 

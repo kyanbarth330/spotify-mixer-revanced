@@ -1,32 +1,32 @@
 # SpotEnhancer — next session
 
-## Current state: 0.10
+## Current state: 0.11
 
-Work on `codex/mixer-installer` and draft PR #1. Do not merge. The user confirmed that 0.9 playback works, then reported old selections and strange queue behavior after restart. Do not interpret that feedback as full queue/Connect verification.
+Continue on `codex/mixer-installer`, draft PR #1. Do not merge. The user approved the generated three-screen concept and asked to reproduce it, including presets, multiple weighted playlists, history and full playlists. All project UI remains English.
 
-0.10 adds persisted **Shuffle mix**, passes its snapshot to Spotify on explicit Start Mix, re-reads playlist arguments from reused fragments, and refreshes an already open mixer when saved sources change. It retains the ratio planner, paginated native track/title retrieval, actual service readiness gating and explicit Load mix -> Start Mix workflow. Shared UI has dark forest surfaces, rounded cards and a fixed title; home groups existing features under Playback and Tools for expansion. Further visual refinement remains possible.
+The two top buttons are replaced by one green wrench on the right of Spotify's main app surface. It does not reserve content padding or request system overlay permission. It opens a private translucent Activity with dimmed Spotify behind it. The home panel has working search/category filters, original line icons, compact cards and routes for Playlist Mixer, Mix Presets, Mix History and Diagnostics. Appearance is an empty future category, not a fake feature list. Abstract source artwork is original placeholder art, not real playlist covers.
 
-An own-code force-stop regression reproduced lost SharedPreferences.apply writes: the second process read the original Alpha selection after the first selected Gamma/Delta. Production `MixerPreferences.select` now checks commit before success/navigation. Pending-slot requests, shuffle and ratio gesture completion also commit. These small explicit writes deliberately trade some UI-thread I/O for a durable success signal; do not move playlist/network work to the UI thread.
+Mixer supports two or more distinct sources, automatic percentage redistribution, source replace/remove, saved shuffle, named presets and history. Add playlist opens Spotify's library inside Spotify; opening a playlist and tapping the wrench completes the saved source-index selection. The panel also offers Add to Mixer for a recognized current playlist. Old A/B preferences migrate. Active configuration and presets/history commit before success/navigation.
 
-## Decisions and constraints
+## Full playlist semantics
 
-- All project-generated UI is English; product name is SpotEnhancer.
-- Keep selection/playback inside Spotify: no URL input, clipboard or external share route.
-- Keep a dedicated enhancement screen and Back to Spotify.
-- The requested genuine **Add to Mixer** row in Spotify's native playlist overflow menu remains unfinished. The reserved-space in-app navigation row is the current implementation.
-- Never publish original/patched Spotify APKs, proprietary decompiled source or private keys. Only publish the own installer and original testhost reports/screenshots.
-- Use only files explicitly available in this task. The exact original APK was reattached and is in this workspace's upload directory; do not search other conversations or Library.
-- Fresh CI debug signing certificates remain an update limitation. Do not automatically uninstall either app or commit a signing key.
+FullMixPlanner emits every unique canonical track from included (nonzero) sources. No 100-output-track cap, 10,000-row guard or whole-playlist 90-second deadline remains. Pagination stays at 100 rows per call, with a 30-second call timeout and malformed/incomplete/changing-count rejection. Percentages control unshuffled ordering until a source runs out; including every track cannot force arbitrary final percentage totals. Spotify shuffle randomizes that order; the UI explains this. No silent truncation is used. Very large native-player commands need real-device verification and can fail visibly.
 
-## Remaining work
+Load mix changes to Start Mix only after a real nonempty preparation. Missing native services disable Load mix and do not expose a fake Start action. Changing sources/balance/shuffle, reloading or leaving invalidates preparation. Playback keeps the existing verified native command path; the user confirmed 0.9 playback only, not full large-playlist or queue-restoration behavior.
 
-1. **Spotify queue restoration after restart is not fixed or verified.** Changing saved selections does not change a currently playing queue; explicit Load mix -> Start Mix is required. No automatic audio restart is implemented. Investigate the explicit track pages under the existing collection context without blindly changing a working playback contract. Real Spotify process restart, manual queued items, queue display, Connect and skip behavior require device evidence.
-2. Implement the native playlist overflow row using the pinned APK, without increasing the nearly full original DEX beyond its limit. Patched classes2.dex has 65,535 method references.
-3. Continue the UI refinement while preserving future feature categories and working playback.
-4. Resolve stable installer signing through private CI configuration when account access is available.
+Presets save source identities/titles, weights and shuffle. History keeps the latest 50 accepted request configurations, timestamps and prepared counts; acceptance is not proof of audible playback. Loading an entry does not autoplay and fetches current playlist contents on the next Load mix. It is not an immutable copy of an old queue. No credentials or track copies are stored in the library.
 
-## Verification scope
+## Verification and repairs
 
-Local delivered-payload checks must use the actual installer asset, not a separately compiled helper. Full local original-APK patch/sign checks remain private. Own Android 35 fixtures are not Spotify/login/playback end-to-end tests.
+See README.md, VALIDATION.md and EMULATOR_TESTS.md for final build/evidence links. Local engine/core tests cover three full sources, 12,501 output tracks, exact weighted prefixes, exhaustion, overlap/invalid/zero sources, percentage updates, duplicates, stale/cancelled preparation and failed reloads. Own-code Android fixtures test panel search, selection of three playlists, stored shuffle, preset save/load, history rendering, migration/corruption/deletion, resumed screen refresh, reused fragment arguments, signing and process-stop persistence of active configuration/presets/history.
 
-Final 0.10 build and emulator evidence links are in README.md and docs/VALIDATION.md. The emulator suite covers repeated A/B replacement, reused arguments, resumed mixer refresh, stored shuffle, safe unavailable-service controls, signing and navigation. Its separate write/force-stop/read phases verify settings across actual processes. Keep any failure and repaired result clearly distinguished.
+Visual checking caught old glossy Holo sliders from the translucent theme; widgets use a Material wrapper and original thin-thumb/switch styling. An Android dialog's automatic uppercase label is selected by its stable button ID in tests. Stale UI references are re-resolved after navigation. The Activity theme must be registered in the manifest, not only set client-side: Android must keep the underlying Activity visible. ManifestEditor uses public style 0x01030010 (Theme.Translucent.NoTitleBar), checked against the compiled own runtime; the pinned input already maps the theme attribute at resource-map index 0. Verification checks the final manifest theme and preserved string indexes.
+
+## Remaining work and constraints
+
+- **Spotify queue restoration after restart is still not fixed or verified.** Changing saved sources does not itself replace the playing queue. Explicit Load mix -> Start Mix is required. There is no automatic audio restart. Investigate existing collection-context restoration without blindly replacing a working command contract. Native queue display, manual queued items, skip/Connect behavior and large native requests require device evidence.
+- The genuine Add to Mixer row in Spotify's native overflow menu remains unfinished; current selection uses the new tools panel/wrench.
+- Stable private installer signing remains unresolved. Fresh CI debug certificates prevent seamless updates. Do not automatically uninstall apps or commit a signing key.
+- Original classes2.dex has 65,535 method references after existing hooks. New UI/helpers live in appended DEX; do not add more hooks without accounting/relocation.
+- Use only this task's explicitly available files. The exact original APK was reattached to this workspace; do not search other conversations or Library.
+- Never publish original/patched Spotify APKs, proprietary decompiled source or private keys. Only publish the own installer and original fixture screenshots/reports. Own emulators are not Spotify/login/audio end-to-end tests.

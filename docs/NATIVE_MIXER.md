@@ -1,30 +1,29 @@
-# Experimental native Playlist Mixer — 0.9
+# Native Playlist Mixer — 0.11
 
-This integration is restricted to the exact SHA-pinned 9.1.90.2270 APK. No original/patched Spotify binary or decompiled source is distributed.
+Restricted to the SHA-pinned Spotify 9.1.90.2270 input. No Spotify binary or proprietary decompiled source is distributed.
 
-## User flow
+## Flow
 
-1. Select two different playlists with the existing in-app Add to Mixer flow.
-2. Open Playlist Mixer. Both native service indicators must be ready. If they are waiting, visit a playlist and start a normal Spotify track once, then return/refresh.
-3. Set the A/B ratio and tap **Load mix**. Both playlists are fetched in pages of 100 items. Real playlist metadata supplies their titles. Episodes, local URIs and non-track placeholders are excluded from this track-only mix.
-4. The screen shows the prepared size and actual source counts. The mix contains up to 100 unique canonical track URIs. Duplicate tracks are assigned without unnecessarily starving the other source. Insufficient source capacity changes the actual ratio, which the screen reports.
-5. **Start Mix** submits that prepared list to Spotify's normal player command path. Shuffle and repeat overrides are disabled for the request. A successful command response is described as an accepted request, not proof of audible playback.
-6. **Back to Spotify** returns to the normal app. Spotify's ordinary next/previous and queue UI are the intended controls. Existing manually queued items, queue presentation, Connect-device targeting and account-specific restrictions still need real-device confirmation. The patch does not implement its own audio engine or bypass restrictions.
+1. Open the green wrench button on Spotify's main app surface. It opens a private translucent Activity, with Spotify dimmed underneath. No system overlay permission is used and no content padding/top navigation row is added.
+2. Open Playlist Mixer and choose **Add playlist**. Spotify's library opens inside the same app. Open a playlist and tap the wrench to complete the pending selection. The home panel also offers Add to Mixer for a recognized current playlist.
+3. Add two or more different sources. Adjusting one percentage redistributes the others so they sum to 100. Replace/remove actions are on each source's options menu. A 0% source is excluded.
+4. **Load mix** paginates every included source in pages of 100 rows, using Spotify's existing authenticated playlist service. This page size is not an output limit. Real title metadata updates the source labels. The previous 100-output-track cap, 10,000-row guard and 90-second whole-playlist deadline are removed; the 30-second individual service-call timeout and malformed/incomplete-response checks remain.
+5. FullMixPlanner includes every unique canonical Spotify track URI from the included sources. Episodes/local/invalid items are excluded. Weighted fair ordering follows the chosen percentages until a source runs out, then continues with the remaining sources. **Using every track cannot also force arbitrary final percentage counts when playlist lengths differ.** With Spotify shuffle enabled the player randomizes that prepared order; the UI explains this distinction.
+6. The single green action changes to **Start Mix** only after a real nonempty preparation. It submits the complete explicit track list to Spotify's normal player command path. No silent truncation or simulated success is used. Large-command/device/service limits may produce an error; logged-in playback of large lists needs device verification.
+7. An accepted request creates a history entry. An accepted command is not proof of audible playback. Back to Spotify returns to the native player/queue.
 
-Changing the ratio, choosing other playlists, refreshing the page or a failed reload invalidates the prepared mix. Starting consumes the prepared snapshot, preventing accidental repeat submissions; load again to retry.
+Changing the configuration, refreshing or leaving the mixer invalidates preparation. Loading after cancellation cannot publish an old result. Starting consumes its immutable snapshot. Spotify's ordinary skip/queue/Connect behavior, manual queued items and restoration after process restart remain unverified; automatic audio restart is not implemented.
 
-## Verified metadata contract
+## Presets and history
 
-Original code captures fully initialized existing playlist and player service objects at their constructor returns. The playlist adapter uses the existing authenticated coroutine transport and its PlaylistDataService Get method, with a bounded protobuf wire adapter built from the pinned schema's field-number metadata. The player adapter uses Context.fromTrackUris, PlayOrigin, PlayCommand, normal prepare/options builders, and the existing player service's Rx Single result.
+Presets save a name, playlist identities/titles, percentages and shuffle locally. They survive process restart. History retains the latest 50 **accepted request configurations**, timestamps and prepared track counts. Neither stores credentials or copies of playlist tracks. Loading a preset/history entry loads its configuration without starting audio; the next Load mix fetches the playlists' current contents, so history is not an immutable recording of the old track sequence. Deletions require confirmation in the UI. Corrupt stored JSON produces an error rather than silently clearing the library.
 
-NativeContractValidation is a local-only helper that checks the input SHA, reflection method/field signatures and 25 protobuf field constants against the supplied APK. ServiceHooks regressions check the unchanged this register (including values above 15), return placement and fail-closed matching. The original classes2.dex has 65,532 method references; the two capture references plus the existing Activity reference bring the modified DEX to 65,535. Future hook additions must respect the 65,536-reference limit or relocate classes.
+Old 0.10 A/B preferences migrate on first use. Active configuration and library writes use checked commit before success/navigation, preserving the process-stop repair. A pending selection is addressed by source index and is rejected when outside the current configuration.
 
-No tokens are extracted. No external Web API login, URL entry, Android share route, payment/ad/DRM patch or private-key export is introduced. A transport's synchronous stub was deliberately avoided; the implementation handles its actual asynchronous continuation response.
+## Pinned native contract
 
-## Limits
+Existing initialized playlist/player services are captured at constructor returns. The adapter calls PlaylistDataService Get through the existing coroutine transport, with bounded protobuf decoding based on verified schema metadata. Playback uses Context.fromTrackUris, PlayOrigin, PlayCommand, normal options builders and the existing Rx Single result. Shuffle follows the stored snapshot; repeat remains off. No token extraction, new Web API login, URL input, share sheet, restriction bypass or separate audio engine is introduced.
 
-- Native service availability, network/authentication errors, loading playlists, malformed responses and timeouts stop preparation. Start Mix stays disabled until a real load produces a nonempty mix.
-- Pagination rejects advertised incomplete totals, changing counts and more than 10,000 rows. It does not guarantee an atomic snapshot if a playlist is edited without changing its count during pagination.
-- URI validation does not establish per-track playability. Spotify's normal service and player still enforce availability and account restrictions.
-- The current selection entry remains the fixed navigation row. A genuine native playlist overflow row is separate unfinished work.
-- Own-code unit/emulator tests and local patch/sign verification are not logged-in Spotify playback tests. Actual native response handling, audible playback and queue appearance must be confirmed on a real installation.
+NativeContractValidation checks the input hash, method/field signatures and 25 protobuf field constants locally. Original classes2.dex has 65,532 method references; the existing hooks yield 65,535. No additional proprietary-class hook is added by the new panel. ManifestEditor registers the private Activity with the public Android Theme.Translucent.NoTitleBar reference; setting only the client theme does not make the server keep the underlying Activity visible.
+
+Own-code unit/emulator tests and local patch/sign checks do not establish Spotify/login/audio end-to-end success. See VALIDATION.md for actual results. The genuine native playlist overflow row and stable private CI installer signing remain separate unfinished work.
