@@ -9,17 +9,20 @@ def verify(original,patched):
         old=strings_from_xml(before.read('AndroidManifest.xml'))
         data=after.read('AndroidManifest.xml');strings=strings_from_xml(data)
         assert strings[:len(old)]==old,'Original manifest string indexes changed'
-        found=[];p=8
+        found=[];aliases=[];p=8
         while p<len(data):
             typ,head,size=struct.unpack_from('<HHI',data,p)
-            if typ==0x102 and strings[struct.unpack_from('<I',data,p+20)[0]]=='activity':
+            if typ==0x102 and strings[struct.unpack_from('<I',data,p+20)[0]] in ('activity','activity-alias'):
                 start,step,count=struct.unpack_from('<HHH',data,p+24);attrs={}
                 for i in range(count):
                     a=p+16+start+i*step;key=struct.unpack_from('<I',data,a+4)[0];kind=data[a+15];value=struct.unpack_from('<I',data,a+16)[0]
                     attrs[strings[key]]=strings[value] if kind==3 else value
                 if attrs.get('name')=='org.example.spotifymixer.runtime.SpotEnhancerActivity':found.append(attrs)
+                if strings[struct.unpack_from('<I',data,p+20)[0]]=='activity-alias' and attrs.get('targetActivity')=='org.example.spotifymixer.runtime.SpotEnhancerActivity':aliases.append(attrs)
             p+=size
         assert len(found)==1 and found[0].get('exported')==0,'Missing private SpotEnhancer Activity'
+        assert {a['name'] for a in aliases}=={'org.example.spotifymixer.runtime.SpotEnhancerEntry','org.example.spotifymixer.runtime.AddToMixer'},'Missing launcher/share aliases'
+        assert all(a.get('exported')==1 for a in aliases),'Aliases not reachable'
         def classes(z):
             result=[]
             for name in z.namelist():

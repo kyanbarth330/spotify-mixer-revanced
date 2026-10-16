@@ -29,20 +29,30 @@ final class ManifestEditor {
         }
         if(strings==null||insert<0||strings.contains(ACTIVITY))throw new IOException("Unexpected manifest structure");
         int activity=index(strings,"activity"),name=index(strings,"name"),exported=index(strings,"exported"),ns=index(strings,"http://schemas.android.com/apk/res/android"),value=index(strings,ACTIVITY);
+        int alias=index(strings,"activity-alias"),label=index(strings,"label"),target=index(strings,"targetActivity"),filter=index(strings,"intent-filter"),action=index(strings,"action"),category=index(strings,"category"),dataTag=index(strings,"data"),mime=index(strings,"mimeType");
+        int entry=index(strings,"org.example.spotifymixer.runtime.SpotEnhancerEntry"),share=index(strings,"org.example.spotifymixer.runtime.AddToMixer"),appLabel=index(strings,"SpotEnhancer"),shareLabel=index(strings,"Add to Mixer · SpotEnhancer");
+        int main=index(strings,"android.intent.action.MAIN"),launcher=index(strings,"android.intent.category.LAUNCHER"),send=index(strings,"android.intent.action.SEND"),def=index(strings,"android.intent.category.DEFAULT"),plain=index(strings,"text/plain");
         ByteArrayOutputStream data=new ByteArrayOutputStream();int[] offsets=new int[strings.size()];
         for(int i=0;i<strings.size();i++){offsets[i]=data.size();byte[] utf=strings.get(i).getBytes(StandardCharsets.UTF_8);writeLen(data,strings.get(i).length());writeLen(data,utf.length);data.write(utf);data.write(0);}
         while(data.size()%4!=0)data.write(0);
         ByteBuffer sp=ByteBuffer.allocate(28+4*strings.size()+data.size()).order(ByteOrder.LITTLE_ENDIAN);
         sp.putShort((short)1).putShort((short)28).putInt(sp.capacity()).putInt(strings.size()).putInt(0).putInt(256).putInt(28+4*strings.size()).putInt(0);
         for(int off:offsets)sp.putInt(off);sp.put(data.toByteArray());pool=sp.array();
-        ByteBuffer node=ByteBuffer.allocate(100).order(ByteOrder.LITTLE_ENDIAN);
-        node.putShort((short)0x102).putShort((short)16).putInt(76).putInt(0).putInt(-1);
-        node.putInt(-1).putInt(activity).putShort((short)20).putShort((short)20).putShort((short)2).putShort((short)0).putShort((short)0).putShort((short)0);
-        attr(node,ns,name,value,3,value);attr(node,ns,exported,-1,18,0);
-        node.putShort((short)0x103).putShort((short)16).putInt(24).putInt(0).putInt(-1).putInt(-1).putInt(activity);
-        ByteArrayOutputStream out=new ByteArrayOutputStream();out.write(xml,0,poolStart);out.write(pool);out.write(xml,poolEnd,insert-poolEnd);out.write(node.array());out.write(xml,insert,xml.length-insert);
+        ByteArrayOutputStream nodes=new ByteArrayOutputStream();
+        start(nodes,activity,new int[][]{{ns,name,value,3,value},{ns,exported,-1,18,0}});end(nodes,activity);
+        start(nodes,alias,new int[][]{{ns,label,appLabel,3,appLabel},{ns,name,entry,3,entry},{ns,exported,-1,18,1},{ns,target,value,3,value}});
+        start(nodes,filter,new int[0][]);start(nodes,action,new int[][]{{ns,name,main,3,main}});end(nodes,action);start(nodes,category,new int[][]{{ns,name,launcher,3,launcher}});end(nodes,category);end(nodes,filter);end(nodes,alias);
+        start(nodes,alias,new int[][]{{ns,label,shareLabel,3,shareLabel},{ns,name,share,3,share},{ns,exported,-1,18,1},{ns,target,value,3,value}});
+        start(nodes,filter,new int[0][]);start(nodes,action,new int[][]{{ns,name,send,3,send}});end(nodes,action);start(nodes,category,new int[][]{{ns,name,def,3,def}});end(nodes,category);start(nodes,dataTag,new int[][]{{ns,mime,plain,3,plain}});end(nodes,dataTag);end(nodes,filter);end(nodes,alias);
+        ByteArrayOutputStream out=new ByteArrayOutputStream();out.write(xml,0,poolStart);out.write(pool);out.write(xml,poolEnd,insert-poolEnd);out.write(nodes.toByteArray());out.write(xml,insert,xml.length-insert);
         byte[] result=out.toByteArray();ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN).putInt(4,result.length);return result;
     }
+    private static void start(OutputStream out,int tag,int[][] attrs)throws IOException{
+        ByteBuffer b=ByteBuffer.allocate(36+20*attrs.length).order(ByteOrder.LITTLE_ENDIAN);
+        b.putShort((short)0x102).putShort((short)16).putInt(b.capacity()).putInt(0).putInt(-1).putInt(-1).putInt(tag).putShort((short)20).putShort((short)20).putShort((short)attrs.length).putShort((short)0).putShort((short)0).putShort((short)0);
+        for(int[] a:attrs)attr(b,a[0],a[1],a[2],a[3],a[4]);out.write(b.array());
+    }
+    private static void end(OutputStream out,int tag)throws IOException{ByteBuffer b=ByteBuffer.allocate(24).order(ByteOrder.LITTLE_ENDIAN);b.putShort((short)0x103).putShort((short)16).putInt(24).putInt(0).putInt(-1).putInt(-1).putInt(tag);out.write(b.array());}
     private static void attr(ByteBuffer b,int ns,int name,int raw,int type,int value){b.putInt(ns).putInt(name).putInt(raw).putShort((short)8).put((byte)0).put((byte)type).putInt(value);}
     private static int index(List<String> list,String s){int i=list.indexOf(s);if(i<0){i=list.size();list.add(s);}return i;}
     private static int[] len8(byte[] b,int p){int n=b[p++]&255;if((n&128)!=0)n=((n&127)<<8)|(b[p++]&255);return new int[]{n,p};}

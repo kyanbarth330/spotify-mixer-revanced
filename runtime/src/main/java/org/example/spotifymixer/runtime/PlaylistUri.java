@@ -8,6 +8,11 @@ public final class PlaylistUri {
         Matcher m=Pattern.compile("^(?:spotify:playlist:|https://open\\.spotify\\.com/(?:intl-[^/]+/)?playlist/)([A-Za-z0-9]{22})(?:\\?.*)?$").matcher(value);
         return m.matches()?"spotify:playlist:"+m.group(1):null;
     }
+    public static String fromSharedText(String value){
+        if(value==null)return null;
+        Matcher m=Pattern.compile("(?:spotify:playlist:|https://open\\.spotify\\.com/(?:intl-[^/\\s]+/)?playlist/)[A-Za-z0-9]{22}(?![A-Za-z0-9])").matcher(value);
+        return m.find()?normalize(m.group()):null;
+    }
     static String fromBundle(Bundle bundle){return fromBundle(bundle,0);}
     private static String fromBundle(Bundle bundle,int depth){
         for(String key:new String[]{"playlist_uri","playlistUri","uri","view_uri","entity_uri"}){
