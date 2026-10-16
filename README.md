@@ -2,7 +2,7 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.12](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38889340556/artifacts/12040699354)
+## [Download SpotEnhancer 0.14](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38912224596/artifacts/12051395202)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
 
@@ -12,7 +12,7 @@ Open the green wrench -> Playlist Creator, enable it, and enter a name, genres/a
 
 The native creation request is followed by a full readback of name, count and track order. Failure or timeout keeps an unfinished-request record, blocks another write and offers read-only verification. Clear it only after checking your Spotify library; an unconfirmed request may already have created a playlist. No automatic write retries or automatic deletion. The feature switch defaults off and draft settings persist.
 
-This is a new experimental integration with locally verified contracts and own-code protocol tests, **not confirmed account-side success**. Spotify server permissions/restrictions are respected. Supported input remains the exact **9.1.90.2270** APK; the supplied 9.1.92 APK is not yet supported. See [creator behavior and validation](docs/PLAYLIST_CREATOR.md). Build links below remain historical until 0.14 completes validation.
+This is a new experimental integration with locally verified contracts and own-code protocol tests, **not confirmed account-side success**. Spotify server permissions/restrictions are respected. Supported input remains the exact **9.1.90.2270** APK; the supplied 9.1.92 APK is not yet supported. See [creator behavior and validation](docs/PLAYLIST_CREATOR.md). [0.14 build](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38912224596) and [own Android test evidence](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38912224614/artifacts/12050808096) pass; these do not establish live account-side creation.
 
 ## Version 0.13 development — Playlist Creator foundation
 
