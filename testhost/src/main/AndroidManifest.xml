@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application android:label="SpotEnhancer test fixture" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false">
+    <activity android:name="org.example.spotifymixer.runtime.SpotEnhancerActivity" android:exported="false"/>
+    <activity android:name=".FixtureActivity" android:exported="true">
+      <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+      <intent-filter><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.DEFAULT"/><data android:scheme="spotify"/></intent-filter>
+    </activity>
+    <activity-alias android:name="com.spotify.music.MainActivity" android:targetActivity=".FixtureActivity" android:exported="true"/>
+  </application>
+</manifest>
