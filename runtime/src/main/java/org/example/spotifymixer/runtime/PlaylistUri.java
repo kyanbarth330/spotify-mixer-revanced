@@ -12,6 +12,8 @@ public final class PlaylistUri {
     }
     static String fromBundle(Bundle bundle){return fromBundle(bundle,0);}
     private static String fromBundle(Bundle bundle,int depth){
+        String page=PageParameters.playlist(bundle.get("parameters"));
+        if(page!=null)return page;
         for(String key:new String[]{"playlist_uri","playlistUri","uri","view_uri","entity_uri"}){
             Object value=bundle.get(key);String uri=value instanceof String || value instanceof android.net.Uri?normalize(value.toString()):null;if(uri!=null)return uri;
         }

@@ -18,5 +18,6 @@ def check(path):
     assert 'Lorg/example/spotifymixer/runtime/SpotEnhancerActivity;' in types, 'Missing SpotEnhancer screen'
     assert 'Lorg/example/spotifymixer/runtime/PlaylistUri;' in types, 'Missing playlist identity helper'
     assert 'Lorg/example/spotifymixer/runtime/Diagnostics;' in types, 'Missing in-app diagnostics'
+    assert 'Lorg/example/spotifymixer/runtime/PageParameters;' in types, 'Missing page-parameters reader'
     print(f'PASS: installer asset has {len(names)} DEX files, {len(types)} classes and Mixer.attach')
 if __name__=='__main__': check(sys.argv[1])

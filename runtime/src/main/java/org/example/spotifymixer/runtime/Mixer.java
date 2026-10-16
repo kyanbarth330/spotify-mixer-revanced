@@ -70,7 +70,11 @@ public final class Mixer {
             if(root==null || bundle==null){Diagnostics.event("Skipped: "+fragment.getClass().getName()+" view="+(root==null?"null":root.getClass().getName())+" arguments="+(bundle==null?"none":"present"));return;}
             Diagnostics.event("Fragment "+fragment.getClass().getName()+" root="+root.getClass().getName()+" keys="+bundle.keySet());
             String uri=PlaylistUri.fromBundle(bundle);
-            if(uri==null){Diagnostics.event("No recognized playlist identity");return;}
+            if(uri==null){
+                contexts.remove(root);
+                Diagnostics.event(PageParameters.describe(bundle.get("parameters")));
+                Diagnostics.event("No unambiguous playlist identity");return;
+            }
             String title="Selected playlist";
             for(String key:new String[]{"playlist_name","playlist_title","title","name"}){Object value=bundle.get(key);if(value instanceof String && !((String)value).isEmpty()){title=(String)value;break;}}
             contexts.put(root,new String[]{uri,title});Diagnostics.event("Playlist context captured");
