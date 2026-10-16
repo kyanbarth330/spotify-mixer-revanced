@@ -2,9 +2,17 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.8](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38874206796/artifacts/12033969094)
+## [Download SpotEnhancer 0.9](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38877505652/artifacts/12036475207)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
+
+## Version 0.9 — experimental native mixer
+
+Select Playlist A/B, set the ratio and choose **Load mix → Start Mix → Back to Spotify**. Spotify's native playlist service supplies paginated tracks and real titles. The shared planner prepares up to 100 unique track URIs and reports actual A/B counts. Start Mix uses the existing Spotify player command path, with shuffle/repeat disabled for the request. Unsupported items are skipped, source shortages are reported, and errors never become fake playback-success messages.
+
+If service indicators are waiting, open a playlist and play a normal Spotify track once, then return and refresh. **Start Mix stays disabled until an actual playlist load prepares a nonempty queue.** An accepted command is not proof of audible playback. Queue presentation, manual queue interactions and real audio still need device confirmation; these were not tested with Spotify on the public emulator.
+
+See [native mixer behavior and limits](docs/NATIVE_MIXER.md). The native playlist overflow row remains unfinished; Add to Mixer still uses the fixed in-app row.
 
 ## Version 0.8 — device build repair and patch terminal
 
@@ -16,7 +24,7 @@ The installer has a selectable, scrollable terminal log with elapsed timestamps 
 
 The installer and private enhancement screens now share a dark/green theme, rounded controls and cards, density-aware spacing and system-bar styling. Selection first uses explicit playlist title metadata, then one unambiguous accessibility heading inside the recognized playlist root. Ambiguous headings retain the honest `Selected playlist` fallback; actual Spotify title extraction still requires device confirmation.
 
-A pure `MixPlanner` now plans deterministic, deduplicated queues with ratio quotas and source-shortage fallback. It is tested independently and **not connected to Spotify track retrieval or playback**. There is no Start Mix control yet.
+A pure `MixPlanner` now plans deterministic, deduplicated queues with ratio quotas and source-shortage fallback. It is tested independently. Version 0.9 connects it to native playlist retrieval and an experimental Start Mix command; see the current flow above.
 
 The user confirmed selecting two distinct playlists in 0.6. See [virtual-device test scope and evidence](docs/EMULATOR_TESTS.md).
 
@@ -28,7 +36,7 @@ For playlist selection: **SpotEnhancer → Playlist Mixer → Choose Playlist A/
 
 The contextual action is enabled only when the hook captures an unambiguous visible playlist identity. If it remains disabled, open **SpotEnhancer → Diagnostics** after visiting the playlist. The report shows hook counts/view types/argument key names, not playlist names or URLs. The user confirmed panel operation and two distinct selections in 0.6. The desired native playlist overflow-menu row is still pending; the fixed navigation row remains the current entry point.
 
-Playlist choices and ratio are saved. Actual playback/queue mixing is not implemented. The home screen is ready for additional enhancement features.
+Playlist choices and ratio are saved. Version 0.9 connects an experimental native preparation/playback path; logged-in device confirmation is still required. The home screen is ready for additional enhancement features.
 
 ## Existing development installations
 

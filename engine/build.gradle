@@ -21,5 +21,3 @@ tasks.register('validateInstallerRuntime', JavaExec) {
     mainClass = 'org.example.spotifymixer.engine.InstallerPayloadValidation'
     if (project.hasProperty('installerApk')) args project.property('installerApk')
 }
-
-
