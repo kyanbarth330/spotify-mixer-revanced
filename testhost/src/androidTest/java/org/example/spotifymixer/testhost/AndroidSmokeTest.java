@@ -56,7 +56,7 @@ public class AndroidSmokeTest {
             assertTrue(device.wait(Until.hasObject(By.text("Add to Mixer").enabled(true)),10000));waitText("Add to Mixer").click();
             waitText("Playlist Mixer").click();waitText("Playlist Alpha");waitText("Playlist Beta");
             UiObject2 slider=device.findObject(By.clazz("android.widget.SeekBar"));assertNotNull(slider);Rect bounds=slider.getVisibleBounds();device.click(bounds.left+bounds.width()*2/5,bounds.centerY());device.waitForIdle();
-            waitText("Shuffle mix").click();assertTrue(context.getSharedPreferences(PREFS,0).getBoolean("shuffle",false));
+            waitText("Shuffle mix").click();assertTrue(device.wait(Until.hasObject(By.text("Shuffle mix").checked(true)),4000));device.waitForIdle();assertTrue(context.getSharedPreferences(PREFS,0).getBoolean("shuffle",false));
             assertNotEquals(70,context.getSharedPreferences(PREFS,0).getInt("ratio",70));
             assertEquals("Playlist Alpha",context.getSharedPreferences(PREFS,0).getString("a_title",null));
             assertEquals("Playlist Beta",context.getSharedPreferences(PREFS,0).getString("b_title",null));
