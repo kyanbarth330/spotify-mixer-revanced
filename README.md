@@ -2,9 +2,15 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.7](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38841700440/artifacts/12021403453)
+## [Download SpotEnhancer 0.8](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38874206796/artifacts/12033969094)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
+
+## Version 0.8 — device build repair and patch terminal
+
+Fixes the on-device `Invalid or duplicate runtime class` failure for the shared theme/D8 lambda introduced in 0.7. CI now validates the actual packaged runtime using the patcher's own acceptance rules, in addition to checking class presence.
+
+The installer has a selectable, scrollable terminal log with elapsed timestamps and **Copy log**. Real callbacks report runtime DEX validation, playlist/Activity hooks, manifest changes, retained and added `classes*.dex`, signing and signature verification. No patch operations are simulated. A failed step retains its history for diagnosis.
 
 ## Version 0.7 — themed screens and title fallback
 
