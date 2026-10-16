@@ -2,15 +2,15 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.14](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38912224596/artifacts/12051395202)
+## [Download SpotEnhancer 0.15](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38916246028/artifacts/12052692365)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
 
-## Version 0.15 — Theme Studio (validation in progress)
+## Version 0.15 — Theme Studio
 
 Green wrench -> Theme Studio -> Enable themes. Preview and apply **AMOLED Green, Midnight Ocean, Velvet Purple, Rose Gold or Arctic Mint**. The selected preset is saved and affects native Compose UI colors, supported traditional Android views, system bars and SpotEnhancer. Reopen Spotify screen refreshes the main Activity; restart Spotify if a cached screen still has old colors. Restore Spotify defaults disables theming and restores tracked view properties without clearing app data.
 
-These are global **color presets**, not layout/font replacements. Artwork and video data are not recolored. Arbitrary stateful selectors/custom canvases/gradients and some dialogs can retain original styling. Supported input stays pinned to 9.1.90.2270. See [theme scope](docs/THEMING.md). Existing 0.14 build link above remains until 0.15 verification finishes.
+These are global **color presets**, not layout/font replacements. Artwork and video data are not recolored. Arbitrary stateful selectors/custom canvases/gradients and some dialogs can retain original styling. Supported input stays pinned to 9.1.90.2270. See [theme scope](docs/THEMING.md). [Build](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38916246028) and [own Android 35 evidence](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38916513146/artifacts/12052823312) pass, including execution of a transformed original test DEX. Native Spotify visual coverage still needs device confirmation.
 
 ## Version 0.14 — experimental native Playlist Creator
 
