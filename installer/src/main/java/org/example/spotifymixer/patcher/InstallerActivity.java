@@ -34,7 +34,7 @@ public final class InstallerActivity extends Activity {
         EnhancerTheme.text(box,"Your music. Your experience.",22,true);
         LinearLayout card=EnhancerTheme.card(box);
         EnhancerTheme.text(card,"Build on your device",20,true);
-        status=EnhancerTheme.text(card,"Select the supported Spotify 9.1.90.2270 APK. Your APK is processed locally. At least 1 GB of free storage is required. Playback mixing is not available yet.",15,false);
+        status=EnhancerTheme.text(card,"Select the supported Spotify 9.1.90.2270 APK. Your APK is processed locally. At least 1 GB of free storage is required. Native playback integration is experimental and needs device verification.",15,false);
         select=EnhancerTheme.button(box,"1. Select APK and build SpotEnhancer",true,()->{});
         select.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE);

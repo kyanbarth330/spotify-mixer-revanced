@@ -61,6 +61,8 @@ public class AndroidSmokeTest {
             assertEquals("Playlist Beta",context.getSharedPreferences(PREFS,0).getString("b_title",null));
             assertEquals("spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",context.getSharedPreferences(PREFS,0).getString("a",null));
             assertEquals("spotify:playlist:37i9dQZF1DX0XUsuxWHRQd",context.getSharedPreferences(PREFS,0).getString("b",null));
+            assertFalse(waitText("Load mix").isEnabled());
+            assertFalse(waitText("Start Mix").isEnabled());
             screenshot("03-playlist-mixer-two-selections");
             waitText("Back to SpotEnhancer").click();waitText("Diagnostics").click();waitText("Diagnostics");assertNotNull(device.findObject(By.textContains("keys=[")));screenshot("04-diagnostics");
             waitText("Back to Spotify").click();waitText("Playlist Beta");waitText("SpotEnhancer");screenshot("05-return-to-fixture");
