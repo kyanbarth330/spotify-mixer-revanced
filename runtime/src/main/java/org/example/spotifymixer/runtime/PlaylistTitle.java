@@ -22,7 +22,8 @@ public final class PlaylistTitle {
         return budget[0]>0 && candidates.size()==1?candidates.iterator().next():null;
     }
     private static void headings(View v,LinkedHashSet<String> values,int[] budget,int depth){
-        if(--budget[0]<=0 || depth>12 || !v.isShown())return;
+        if(depth>12){budget[0]=0;return;}
+        if(--budget[0]<=0 || !v.isShown())return;
         if(v instanceof TextView && v.isAccessibilityHeading() && !v.isClickable()){
             String title=clean(((TextView)v).getText().toString());if(title!=null)values.add(title);
         }

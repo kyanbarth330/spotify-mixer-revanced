@@ -10,7 +10,7 @@ def check(path):
         names=runtime.namelist()
         classes=[]
         for name in names:
-            classes.extend(parse(runtime.read(name), pattern=r'^Lorg/example/spotifymixer/runtime/'))
+            classes.extend(parse(runtime.read(name), pattern=r'^Lorg/example/spotifymixer/(runtime|ui)/'))
     types=[c['class'] for c in classes]
     assert len(types)==len(set(types)), 'Duplicate runtime classes'
     mixer=next((c for c in classes if c['class']=='Lorg/example/spotifymixer/runtime/Mixer;'),None)
@@ -19,5 +19,7 @@ def check(path):
     assert 'Lorg/example/spotifymixer/runtime/PlaylistUri;' in types, 'Missing playlist identity helper'
     assert 'Lorg/example/spotifymixer/runtime/Diagnostics;' in types, 'Missing in-app diagnostics'
     assert 'Lorg/example/spotifymixer/runtime/PageParameters;' in types, 'Missing page-parameters reader'
+    assert 'Lorg/example/spotifymixer/runtime/PlaylistTitle;' in types, 'Missing playlist title helper'
+    assert 'Lorg/example/spotifymixer/ui/EnhancerTheme;' in types, 'Missing shared UI helper'
     print(f'PASS: installer asset has {len(names)} DEX files, {len(types)} classes and Mixer.attach')
 if __name__=='__main__': check(sys.argv[1])
