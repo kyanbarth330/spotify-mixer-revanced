@@ -8,6 +8,8 @@ Extract and install `installer-debug.apk`, select the original supported Spotify
 
 ## Version 0.13 development — Playlist Creator foundation
 
+[Download creator draft installer](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38909775196/artifacts/12049368418) — build passes; Spotify generation remains unavailable.
+
 The tools panel contains a default-off **Playlist Creator** with saved name, genre, artist, description and track-count preferences (1–500). Playlist names use `SpotEnhancer-{name}`. This is a draft form, **not working Spotify generation**: Generate preview is disabled in the shipped runtime because native search/create contracts have not been verified. No playlist is created by saving a draft, and no credentials or external URL workflow is used.
 
 The original creator transaction and shared UI are tested with a clearly labelled own fixture: exact unique counts, proposal/removal, confirmation, one-shot writes and acknowledged name/count. That test is not Spotify recommendation, account creation, login or playback evidence. The original pinned APK is absent in this workspace and is needed to implement the native adapter. Existing 0.12 mixer behavior is retained. See [creator scope](docs/PLAYLIST_CREATOR.md).
