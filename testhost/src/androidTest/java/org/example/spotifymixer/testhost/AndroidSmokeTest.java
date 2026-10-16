@@ -65,8 +65,15 @@ public class AndroidSmokeTest {
             assertFalse(waitText("Load mix").isEnabled());
             assertFalse(waitText("Start Mix").isEnabled());
             screenshot("03-playlist-mixer-two-selections");
+            waitText("Choose Playlist A").click();waitText("Playlist Gamma").click();waitText("Add to Mixer").click();
+            waitText("Playlist Mixer").click();waitText("Choose Playlist B").click();waitText("Playlist Delta").click();waitText("Add to Mixer").click();
+            waitText("Playlist Mixer").click();waitText("Playlist Gamma");waitText("Playlist Delta");
+            assertEquals("spotify:playlist:0000000000000000000001",context.getSharedPreferences(PREFS,0).getString("a",null));
+            assertEquals("spotify:playlist:0000000000000000000002",context.getSharedPreferences(PREFS,0).getString("b",null));
+            assertTrue(context.getSharedPreferences(PREFS,0).getBoolean("shuffle",false));
+            screenshot("08-replaced-playlists-shuffle");
             waitText("Back to SpotEnhancer").click();waitText("Diagnostics").click();waitText("Diagnostics");assertNotNull(device.findObject(By.textContains("keys=[")));screenshot("04-diagnostics");
-            waitText("Back to Spotify").click();waitText("Playlist Beta");waitText("SpotEnhancer");screenshot("05-return-to-fixture");
+            waitText("Back to Spotify").click();waitText("Playlist Delta");waitText("SpotEnhancer");screenshot("05-return-to-fixture");
         }finally{device.pressHome();}
     }
     @Test public void reusedFragmentReadsReplacementArguments()throws Exception{
