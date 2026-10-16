@@ -35,7 +35,7 @@ public final class Mixer {
                     if(current==null){Toast.makeText(activity,"No playlist detected. Open SpotEnhancer → Diagnostics.",Toast.LENGTH_LONG).show();return;}
                     String slot=activity.getSharedPreferences(PREFS,0).getString("pending_slot","");
                     if(slot.equals("a") || slot.equals("b")){
-                        activity.getSharedPreferences(PREFS,0).edit().putString(slot,current[0]).putString(slot+"_title",current[1]).remove("pending_slot").apply();
+                        if(!MixerPreferences.select(activity.getSharedPreferences(PREFS,0),slot,current[0],current[1])){Toast.makeText(activity,"Could not save playlist. Please try again.",Toast.LENGTH_LONG).show();return;}
                         Toast.makeText(activity,"Playlist "+slot.toUpperCase(Locale.ROOT)+" selected",Toast.LENGTH_SHORT).show();launch(activity,null,null);
                     } else launch(activity,current[0],current[1]);
                 });

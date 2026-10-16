@@ -17,7 +17,9 @@ public class RestartPersistenceTest {
         SharedPreferences prefs=context.getSharedPreferences("spotify-mixer-entry-v1",0);
         if("write".equals(phase)){
             prefs.edit().clear().putString("a","spotify:playlist:37i9dQZF1DXcBWIGoYBM5M").putString("b","spotify:playlist:37i9dQZF1DX0XUsuxWHRQd").commit();
-            prefs.edit().putString("a","spotify:playlist:0000000000000000000001").putString("a_title","Playlist Gamma").putString("b","spotify:playlist:0000000000000000000002").putString("b_title","Playlist Delta").putBoolean("shuffle",true).putInt("ratio",40).apply();
+            assertTrue(prefs.edit().putBoolean("shuffle",true).putInt("ratio",40).commit());
+            assertTrue(org.example.spotifymixer.runtime.MixerPreferences.select(prefs,"a","spotify:playlist:0000000000000000000001","Playlist Gamma"));
+            assertTrue(org.example.spotifymixer.runtime.MixerPreferences.select(prefs,"b","spotify:playlist:0000000000000000000002","Playlist Delta"));
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
         }else{
             assertEquals("read",phase);

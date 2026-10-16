@@ -59,8 +59,8 @@ public final class SpotEnhancerActivity extends Activity {
         MixSession.Prepared[] prepared={null};
         Runnable allowLoad=()->load.setEnabled(NativeBridge.ready()&&PlaylistUri.normalize(prefs.getString("a",null))!=null&&PlaylistUri.normalize(prefs.getString("b",null))!=null);
         allowLoad.run();
-        shuffle.setOnCheckedChangeListener((button,checked)->{prefs.edit().putBoolean("shuffle",checked).apply();shownSelection=selectionSignature();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Shuffle changed. Load the mix again.");});
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){ratio.setText("A: "+n+"%   B: "+(100-n)+"%");if(user){prefs.edit().putInt("ratio",n).apply();shownSelection=selectionSignature();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Ratio changed. Load the mix again.");}}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});
+        shuffle.setOnCheckedChangeListener((button,checked)->{if(!prefs.edit().putBoolean("shuffle",checked).commit())Toast.makeText(this,"Could not save shuffle setting",Toast.LENGTH_LONG).show();shownSelection=selectionSignature();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Shuffle changed. Load the mix again.");});
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){ratio.setText("A: "+n+"%   B: "+(100-n)+"%");if(user){prefs.edit().putInt("ratio",n).apply();shownSelection=selectionSignature();session.invalidate();prepared[0]=null;start.setEnabled(false);state.setText("Ratio changed. Load the mix again.");}}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){if(!prefs.edit().putInt("ratio",s.getProgress()).commit())Toast.makeText(SpotEnhancerActivity.this,"Could not save mix balance",Toast.LENGTH_LONG).show();}});
         load.setOnClickListener(v->{
             load.setEnabled(false);start.setEnabled(false);slider.setEnabled(false);shuffle.setEnabled(false);chooseA.setEnabled(false);chooseB.setEnabled(false);prepared[0]=null;
             String a=prefs.getString("a",null),b=prefs.getString("b",null);int percent=slider.getProgress();boolean shuffled=shuffle.isChecked();
@@ -98,7 +98,7 @@ public final class SpotEnhancerActivity extends Activity {
         button(box,"Back to SpotEnhancer",()->home());
     }
     private void choose(String slot){
-        prefs.edit().putString("pending_slot",slot).apply();
+        if(!prefs.edit().putString("pending_slot",slot).commit()){Toast.makeText(this,"Could not save selection request",Toast.LENGTH_LONG).show();return;}
         startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("spotify:collection:playlists")).setPackage(getPackageName()).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
         finish();
         Toast.makeText(this,"Open a playlist, then tap Add to Mixer",Toast.LENGTH_LONG).show();
@@ -107,7 +107,7 @@ public final class SpotEnhancerActivity extends Activity {
         if(!getIntent().getBooleanExtra("from_spotify",false))startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setClassName(getPackageName(),"com.spotify.music.MainActivity").addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
         finish();
     }
-    private void save(String slot){prefs.edit().remove("pending_slot").putString(slot,pending).putString(slot+"_title",title==null?"Selected playlist":title).apply();pending=null;showMixer();Toast.makeText(this,"Playlist "+slot.toUpperCase(java.util.Locale.ROOT)+" selected",Toast.LENGTH_SHORT).show();}
+    private void save(String slot){if(!MixerPreferences.select(prefs,slot,pending,title)){Toast.makeText(this,"Could not save playlist. Please try again.",Toast.LENGTH_LONG).show();return;}pending=null;showMixer();Toast.makeText(this,"Playlist "+slot.toUpperCase(java.util.Locale.ROOT)+" selected",Toast.LENGTH_SHORT).show();}
     private TextView text(LinearLayout box,String value,int size){return EnhancerTheme.text(box,value,size,size>=20);}
     private void button(LinearLayout box,String label,Runnable action){EnhancerTheme.button(box,label,label.startsWith("Choose") || label.equals("Playlist Mixer"),action);}
 }
