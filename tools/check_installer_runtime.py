@@ -14,6 +14,8 @@ def check(path):
     types=[c['class'] for c in classes]
     assert len(types)==len(set(types)), 'Duplicate runtime classes'
     mixer=next((c for c in classes if c['class']=='Lorg/example/spotifymixer/runtime/Mixer;'),None)
-    assert mixer and 'attach' in mixer['methods'], 'Missing Mixer.attach'
+    assert mixer and 'attach' in mixer['methods'] and 'fragmentResumed' in mixer['methods'], 'Missing runtime bridge'
+    assert 'Lorg/example/spotifymixer/runtime/SpotEnhancerActivity;' in types, 'Missing SpotEnhancer screen'
+    assert 'Lorg/example/spotifymixer/runtime/PlaylistUri;' in types, 'Missing playlist identity helper'
     print(f'PASS: installer asset has {len(names)} DEX files, {len(types)} classes and Mixer.attach')
 if __name__=='__main__': check(sys.argv[1])

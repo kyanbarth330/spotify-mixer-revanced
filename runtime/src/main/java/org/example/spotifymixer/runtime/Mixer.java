@@ -1,49 +1,57 @@
 package org.example.spotifymixer.runtime;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.view.Gravity;
-import android.view.View;
+import android.content.*;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.*;
 import android.widget.*;
+import java.lang.reflect.Field;
 
-/** Original in-process UI. No account, playback or premium hooks. */
+/** Exact-version fragment bridge. Never creates a global floating control. */
 public final class Mixer {
-    private static final String TAG = "spotify-mixer-entry-v1";
-    public static void attach(Activity activity) {
-        // Posted after onResume so that Spotify has installed its content view.
-        activity.getWindow().getDecorView().post(() -> {
-            if (activity.isFinishing() || activity.isDestroyed()) return;
-            android.view.ViewGroup decor = (android.view.ViewGroup) activity.getWindow().getDecorView();
-            if (decor.findViewWithTag(TAG) != null) return;
-            Button button = new Button(activity);
-            button.setTag(TAG);
-            button.setText("Spotify Mixer");
-            button.setOnClickListener(v -> show(activity));
-            FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.END);
-            params.bottomMargin = (int)(96 * activity.getResources().getDisplayMetrics().density);
-            decor.addView(button, params);
-        });
+    static final String PREFS="spotify-mixer-entry-v1";
+    private static final String ROW="spotenhancer-playlist-actions";
+    public static void attach(Activity activity) { /* Main lifecycle hook retained; no overlay. */ }
+    public static void fragmentResumed(Object manager) {
+        try {
+            Field f=manager.getClass().getDeclaredField("c");f.setAccessible(true);Object fragment=f.get(manager);
+            Class<?> base=Class.forName("p.gs10",false,manager.getClass().getClassLoader());
+            Field args=base.getDeclaredField("f"),view=base.getDeclaredField("e1");args.setAccessible(true);view.setAccessible(true);
+            Bundle bundle=(Bundle)args.get(fragment);View root=(View)view.get(fragment);
+            if(root==null || bundle==null)return;
+            String uri=PlaylistUri.fromBundle(bundle);
+            if(uri==null)return;
+            String title="Selected playlist";
+            for(String key:new String[]{"playlist_name","playlist_title","title","name"}) {
+                Object value=bundle.get(key);if(value instanceof String && !((String)value).isEmpty()){title=(String)value;break;}
+            }
+            final String label=title;
+            root.post(() -> addPlaylistActions(root,uri,label));
+        } catch(ReflectiveOperationException | RuntimeException | LinkageError error) { Log.w("SpotEnhancer","Playlist hook unavailable",error); }
     }
-    private static void show(Activity a) {
-        LinearLayout box = new LinearLayout(a);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(32, 16, 32, 16);
-        EditText first = new EditText(a); first.setHint("Playlist A URL of URI");
-        EditText second = new EditText(a); second.setHint("Playlist B URL of URI");
-        android.content.SharedPreferences prefs = a.getSharedPreferences(TAG, 0);
-        first.setText(prefs.getString("a", "")); second.setText(prefs.getString("b", ""));
-        TextView ratio = new TextView(a);
-        SeekBar bar = new SeekBar(a); bar.setMax(100); bar.setProgress(prefs.getInt("ratio", 70));
-        ratio.setText("A: " + bar.getProgress() + "% · B: " + (100-bar.getProgress()) + "%");
-        bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar s, int n, boolean user) { ratio.setText("A: " + n + "% · B: " + (100-n) + "%"); }
-            public void onStartTrackingTouch(SeekBar s) {} public void onStopTrackingTouch(SeekBar s) {}
-        });
-        TextView note = new TextView(a);
-        note.setText("UI-menu: bewaart playlistvelden en verhouding. Afspelen, playlist ophalen en wachtrij mengen zijn nog niet geïmplementeerd.");
-        box.addView(first); box.addView(second); box.addView(ratio); box.addView(bar); box.addView(note);
-        new AlertDialog.Builder(a).setTitle("Spotify Mixer").setView(box)
-            .setPositiveButton("Bewaren", (d,w) -> prefs.edit().putString("a", first.getText().toString()).putString("b", second.getText().toString()).putInt("ratio", bar.getProgress()).apply())
-            .setNegativeButton("Sluiten", null).show();
+    private static void addPlaylistActions(View root,String uri,String title) {
+        try {
+            if(!(root instanceof FrameLayout) || !root.isAttachedToWindow() || root.findViewWithTag(ROW)!=null)return;
+            Activity activity=activity(root.getContext());if(activity==null)return;
+            FrameLayout host=(FrameLayout)root;
+            host.setClipToPadding(false);
+            int height=(int)(56*root.getResources().getDisplayMetrics().density);
+            LinearLayout row=new LinearLayout(activity);row.setTag(ROW);row.setOrientation(0);row.setBackgroundColor(0xff121212);
+            Button add=new Button(activity);add.setText("Add to Mixer");add.setAllCaps(false);
+            Button open=new Button(activity);open.setText("SpotEnhancer");open.setAllCaps(false);
+            row.addView(add,new LinearLayout.LayoutParams(0,-1,1));row.addView(open,new LinearLayout.LayoutParams(0,-1,1));
+            add.setOnClickListener(v -> launch(activity,uri,title));open.setOnClickListener(v -> launch(activity,null,null));
+            // Reserve a row in this playlist's layout. This is not a window overlay.
+            host.setPadding(host.getPaddingLeft(),host.getPaddingTop()+height,host.getPaddingRight(),host.getPaddingBottom());
+            FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(-1,height,Gravity.TOP);lp.topMargin=-height;
+            host.addView(row,lp);
+        }catch(RuntimeException | LinkageError error){Log.w("SpotEnhancer","Cannot attach playlist actions",error);}
+    }
+    private static Activity activity(Context context){for(int i=0;i<10;i++){if(context instanceof Activity)return (Activity)context;if(!(context instanceof ContextWrapper))return null;context=((ContextWrapper)context).getBaseContext();}return null;}
+    static void launch(Activity a,String uri,String title){
+        Intent intent=new Intent().setClassName(a.getPackageName(),SpotEnhancerActivity.class.getName());
+        if(uri!=null)intent.putExtra("playlist",uri).putExtra("title",title);
+        a.startActivity(intent);
     }
 }

@@ -25,18 +25,18 @@ public final class InstallerActivity extends Activity {
         super.onCreate(state);
         signed = new File(new File(getFilesDir(), "output"), "spotify-mixer.apk");
         LinearLayout box = new LinearLayout(this); box.setOrientation(1); box.setPadding(32,48,32,24);
-        TextView title = new TextView(this); title.setText("Spotify Mixer Installer"); title.setTextSize(24); box.addView(title);
+        TextView title = new TextView(this); title.setText("SpotEnhancer Installer"); title.setTextSize(24); box.addView(title);
         status = new TextView(this);
-        status.setText("Selecteer de onderzochte Spotify 9.1.90.2270 APK. Deze installer injecteert een UI-menu, bouwt en ondertekent lokaal. Playlist afspelen/mengen is nog niet beschikbaar. Reken op minimaal 1 GB vrije opslag en veel werkgeheugen."); box.addView(status);
-        select = new Button(this); select.setText("1. Kies APK en bouw Mixer"); box.addView(select);
+        status.setText("Select the supported Spotify 9.1.90.2270 APK. Build SpotEnhancer locally, then install it. At least 1 GB of free storage is required. Playback mixing is not available yet."); box.addView(status);
+        select = new Button(this); select.setText("1. Select APK and build SpotEnhancer"); box.addView(select);
         select.setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE);
             startActivityForResult(intent, 101);
         });
-        install = new Button(this); install.setText("2. Start Android-installatie"); install.setEnabled(false); box.addView(install);
-        install.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("Aangepaste Spotify installeren")
-            .setMessage("De handtekening verschilt van originele Spotify. Android kan de update weigeren. Verwijderen van Spotify wist lokale appgegevens en downloads; deze installer verwijdert niets automatisch. Ga alleen verder als je dat begrijpt.")
-            .setPositiveButton("Doorgaan", (d,w) -> launchInstall()).setNegativeButton("Annuleren", null).show());
+        install = new Button(this); install.setText("2. Install patched Spotify"); install.setEnabled(false); box.addView(install);
+        install.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("Install patched Spotify")
+            .setMessage("The certificate differs from original Spotify. Android may reject an update. Uninstalling Spotify removes local data and downloads. This installer never uninstalls apps automatically.")
+            .setPositiveButton("Continue", (d,w) -> launchInstall()).setNegativeButton("Cancel", null).show());
         setContentView(box);
         // Never offer an output left by an interrupted or previous session without verification.
         signed.delete();
@@ -44,11 +44,11 @@ public final class InstallerActivity extends Activity {
     protected void onActivityResult(int req, int result, Intent data) {
         super.onActivityResult(req,result,data);
         if (req == 103) {
-            update(result == RESULT_OK ? "Android meldt dat de installatie is voltooid. Open Spotify en controleer het Mixer-menu."
-                : "Installatie niet voltooid of geannuleerd. Bij een handtekeningconflict kan de originele installatie niet als update worden vervangen.");
+            update(result == RESULT_OK ? "Android reports installation completed. Open a playlist and look for SpotEnhancer."
+                : "Installation was cancelled or failed. A certificate mismatch prevents updating an existing installation.");
             return;
         }
-        if (req == 102) { if (getPackageManager().canRequestPackageInstalls()) launchInstall(); return; }
+        if (req == 102) { if (android.os.Build.VERSION.SDK_INT >= 26 && getPackageManager().canRequestPackageInstalls()) launchInstall(); return; }
         if (req != 101 || result != RESULT_OK || data == null || data.getData() == null || busy) return;
         busy = true; select.setEnabled(false); install.setEnabled(false); signed.delete();
         Uri uri = data.getData();
@@ -59,13 +59,13 @@ public final class InstallerActivity extends Activity {
         File runtime = new File(getCacheDir(),"mixer-runtime.zip");
         File unsigned = new File(getCacheDir(),"unsigned.apk");
         try {
-            if (getFilesDir().getUsableSpace() < 1024L*1024*1024) throw new IOException("Minimaal 1 GB vrije opslag nodig");
-            update("APK kopiëren en controleren…");
+            if (getFilesDir().getUsableSpace() < 1024L*1024*1024) throw new IOException("At least 1 GB of free storage is required");
+            update("Copying and checking APK…");
             try (InputStream in = getContentResolver().openInputStream(uri)) { copy(in,input,300L*1024*1024); }
             try (InputStream in = getAssets().open("mixer-runtime.zip")) { copy(in,runtime,16L*1024*1024); }
-            update("Handtekening controleren, DEX injecteren en APK bouwen…");
+            update("Verifying input and building SpotEnhancer…");
             Patcher.patch(input,runtime,unsigned);
-            update("APK ondertekenen en output controleren…");
+            update("Signing and verifying output…");
             KeyStore store = KeyStore.getInstance("AndroidKeyStore"); store.load(null);
             String alias = "spotify-mixer-v1";
             if (!store.containsAlias(alias)) {
@@ -78,10 +78,10 @@ public final class InstallerActivity extends Activity {
             signed.getParentFile().mkdirs();
             Patcher.sign(unsigned,signed,(PrivateKey)store.getKey(alias,null),(X509Certificate)store.getCertificate(alias));
             String hash = Patcher.hash(signed);
-            update("Menu geïnjecteerd; APK gebouwd en cryptografisch gecontroleerd.\nSHA-256: " + hash + "\nDe werking in Spotify is pas na installatie te beoordelen.");
+            update("SpotEnhancer added; APK built and cryptographically verified.\nSHA-256: " + hash + "\nOpen Spotify after installation to verify the new screens.");
             runOnUiThread(() -> install.setEnabled(true));
         } catch (Exception | OutOfMemoryError ex) {
-            signed.delete(); update("Bouwen mislukt: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+            signed.delete(); update("Build failed: " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
         } finally {
             input.delete(); runtime.delete(); unsigned.delete(); busy=false;
             runOnUiThread(() -> select.setEnabled(true));
@@ -89,7 +89,7 @@ public final class InstallerActivity extends Activity {
     }
     private void launchInstall() {
         try {
-            if (!signed.isFile()) throw new IOException("Bouw eerst een APK");
+            if (!signed.isFile()) throw new IOException("Build an APK first");
             if (android.os.Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
                 startActivityForResult(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,Uri.parse("package:"+getPackageName())),102); return;
             }
@@ -97,13 +97,13 @@ public final class InstallerActivity extends Activity {
             Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE).setDataAndType(uri,"application/vnd.android.package-archive")
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION).putExtra(Intent.EXTRA_RETURN_RESULT,true);
             startActivityForResult(intent,103);
-        } catch (Exception ex) { update("Installatie starten mislukt: " + ex.getMessage()); }
+        } catch (Exception ex) { update("Could not start installation: " + ex.getMessage()); }
     }
     private void update(String text) { runOnUiThread(() -> status.setText(text)); }
     private static void copy(InputStream in, File file, long limit) throws IOException {
-        if (in == null) throw new IOException("Bestand niet leesbaar");
+        if (in == null) throw new IOException("File is not readable");
         try (OutputStream out = new FileOutputStream(file)) { byte[] b = new byte[65536]; int n; long total=0;
-            while ((n=in.read(b))!=-1) { total+=n; if(total>limit) throw new IOException("Bestand te groot"); out.write(b,0,n); }
+            while ((n=in.read(b))!=-1) { total+=n; if(total>limit) throw new IOException("File is too large"); out.write(b,0,n); }
         }
     }
 }

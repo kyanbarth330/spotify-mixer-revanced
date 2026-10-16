@@ -4,7 +4,7 @@
   <queries>
     <package android:name="com.spotify.music"/>
   </queries>
-  <application android:allowBackup="false" android:largeHeap="true" android:label="Spotify Mixer Patcher" android:theme="@android:style/Theme.Material.NoActionBar">
+  <application android:allowBackup="false" android:largeHeap="true" android:label="SpotEnhancer Installer" android:theme="@android:style/Theme.Material.NoActionBar">
     <activity android:name=".InstallerActivity" android:configChanges="orientation|screenSize|keyboardHidden" android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>

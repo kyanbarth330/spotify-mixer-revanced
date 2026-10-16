@@ -5,3 +5,4 @@ android {
     defaultConfig { applicationId 'org.example.spotifymixer.runtime'; minSdk 24; targetSdk 28; versionCode 1; versionName '1' }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
+dependencies { testImplementation 'junit:junit:4.13.2' }

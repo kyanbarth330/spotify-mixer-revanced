@@ -32,9 +32,9 @@ public final class Patcher {
         return s.toString();
     }
     public static void validate(File input) throws Exception {
-        if (!INPUT_SHA256.equals(hash(input))) throw new IOException("Deze APK wijkt af van de onderzochte 9.1.90.2270 APK (SHA-256).");
+        if (!INPUT_SHA256.equals(hash(input))) throw new IOException("This is not the supported 9.1.90.2270 APK (SHA-256 mismatch).");
         ApkVerifier.Result result = new ApkVerifier.Builder(input).setMinCheckedPlatformVersion(24).build().verify();
-        if (!result.isVerified()) throw new IOException("Originele APK-handtekening ongeldig: " + result.getErrors());
+        if (!result.isVerified()) throw new IOException("Invalid input APK signature: " + result.getErrors());
     }
     static byte[] hook(byte[] bytes) throws Exception {
         DexBackedDexFile dex = new DexBackedDexFile(Opcodes.forApi(24), bytes);
@@ -44,7 +44,7 @@ public final class Patcher {
             List<Method> methods = new ArrayList<>();
             for (Method m : cls.getMethods()) {
                 if (!m.getName().equals("onResume") || !m.getParameterTypes().isEmpty() || !m.getReturnType().equals("V")) { methods.add(m); continue; }
-                if (m.getImplementation() == null || (m.getAccessFlags() & 8) != 0) throw new IOException("Ongeldig onResume hookpunt");
+                if (m.getImplementation() == null || (m.getAccessFlags() & 8) != 0) throw new IOException("Invalid onResume hook");
                 MutableMethodImplementation impl = new MutableMethodImplementation(m.getImplementation());
                 impl.addInstruction(0, new BuilderInstruction3rc(Opcode.INVOKE_STATIC_RANGE,
                     impl.getRegisterCount()-1, 1, new ImmutableMethodReference(
@@ -56,7 +56,7 @@ public final class Patcher {
             classes.add(new ImmutableClassDef(cls.getType(), cls.getAccessFlags(), cls.getSuperclass(), cls.getInterfaces(),
                 cls.getSourceFile(), cls.getAnnotations(), cls.getFields(), methods));
         }
-        if (matches != 1) throw new IOException("Verwacht precies één onResume hookpunt; gevonden: " + matches);
+        if (matches != 1) throw new IOException("Expected one onResume hook; found: " + matches);
         MemoryDataStore store = new MemoryDataStore();
         DexPool.writeTo(store, new ImmutableDexFile(dex.getOpcodes(), classes));
         return store.getData();
@@ -72,7 +72,7 @@ public final class Patcher {
                     Enumeration<? extends ZipEntry> entries = zip.entries();
                     while (entries.hasMoreElements()) {
                         String name = entries.nextElement().getName();
-                        if (!name.matches("classes([0-9]+)?\\.dex")) throw new IOException("Onverwacht runtime-bestand: " + name);
+                        if (!name.matches("classes([0-9]+)?\\.dex")) throw new IOException("Unexpected runtime entry: " + name);
                         names.add(name);
                     }
                     Collections.sort(names);
@@ -86,7 +86,7 @@ public final class Patcher {
             DexBackedDexFile dex = new DexBackedDexFile(Opcodes.forApi(24), bytes);
             for (ClassDef cls : dex.getClasses()) {
                 if (!cls.getType().startsWith("Lorg/example/spotifymixer/runtime/") || !types.add(cls.getType()))
-                    throw new IOException("Ongeldige of dubbele runtimeklasse: " + cls.getType());
+                    throw new IOException("Invalid or duplicate runtime class: " + cls.getType());
                 if (cls.getType().equals("Lorg/example/spotifymixer/runtime/Mixer;")) {
                     for (Method m : cls.getMethods()) {
                         if (m.getName().equals("attach") && m.getReturnType().equals("V")
@@ -96,7 +96,7 @@ public final class Patcher {
                 }
             }
         }
-        if (!attach) throw new IOException("Runtime mist Mixer.attach(Activity); bouwen afgebroken");
+        if (!attach) throw new IOException("Runtime missing Mixer.attach(Activity); build stopped");
         return payloads;
     }
     public static void patch(File input, File runtime, File unsigned) throws Exception {
@@ -104,9 +104,13 @@ public final class Patcher {
         List<byte[]> runtimeDex = validateRuntime(runtime);
         try (ZipFile zip = new ZipFile(input)) {
             byte[] patched;
+            byte[][] playlist;
+            byte[] manifest;
+            try (InputStream in = zip.getInputStream(zip.getEntry("classes.dex"))) { playlist = PlaylistHook.patch(read(in)); }
+            try (InputStream in = zip.getInputStream(zip.getEntry("AndroidManifest.xml"))) { manifest = ManifestEditor.addActivity(read(in)); }
             try (InputStream in = zip.getInputStream(zip.getEntry("classes2.dex"))) { patched = hook(read(in)); }
-            for (int i = 0; i < runtimeDex.size(); i++)
-                if (zip.getEntry("classes" + (18+i) + ".dex") != null) throw new IOException("Runtime DEX-slot al bezet");
+            for (int i = 0; i < runtimeDex.size()+1; i++)
+                if (zip.getEntry("classes" + (18+i) + ".dex") != null) throw new IOException("Runtime DEX slot already occupied");
             try (CountOutput counter = new CountOutput(new FileOutputStream(unsigned)); ZipOutputStream out = new ZipOutputStream(counter)) {
                 Enumeration<? extends ZipEntry> entries = zip.entries();
                 byte[] buffer = new byte[65536];
@@ -116,6 +120,8 @@ public final class Patcher {
                     if (upper.startsWith("META-INF/") && (upper.endsWith(".RSA") || upper.endsWith(".DSA") || upper.endsWith(".EC") || upper.endsWith(".SF") || upper.equals("META-INF/MANIFEST.MF"))) continue;
                     // Source stamp identifies the original distribution and is invalid after modification.
                     if (name.equals("stamp-cert-sha256")) continue;
+                    if (name.equals("classes.dex")) { put(out, name, playlist[0]); continue; }
+                    if (name.equals("AndroidManifest.xml")) { put(out, name, manifest); continue; }
                     if (name.equals("classes2.dex")) { put(out, name, patched); continue; }
                     ZipEntry entry = new ZipEntry(name); entry.setTime(315532800000L);
                     if (old.getMethod() == ZipEntry.STORED) {
@@ -132,6 +138,7 @@ public final class Patcher {
                     out.closeEntry();
                 }
                 for (int i = 0; i < runtimeDex.size(); i++) put(out, "classes" + (18+i) + ".dex", runtimeDex.get(i));
+                put(out, "classes" + (18+runtimeDex.size()) + ".dex", playlist[1]);
             }
         } catch (Exception e) { unsigned.delete(); throw e; }
     }
@@ -141,7 +148,7 @@ public final class Patcher {
             new ApkSigner.Builder(Collections.singletonList(config)).setInputApk(unsigned).setOutputApk(signed)
                 .setMinSdkVersion(24).setV1SigningEnabled(false).setV2SigningEnabled(true).setV3SigningEnabled(true).setV4SigningEnabled(false).build().sign();
             ApkVerifier.Result result = new ApkVerifier.Builder(signed).setMinCheckedPlatformVersion(24).build().verify();
-            if (!result.isVerified() || !result.isVerifiedUsingV2Scheme()) throw new IOException("Outputhandtekening ongeldig: " + result.getErrors());
+            if (!result.isVerified() || !result.isVerifiedUsingV2Scheme()) throw new IOException("Invalid output signature: " + result.getErrors());
         } catch (Exception e) { signed.delete(); throw e; }
     }
     private static byte[] read(InputStream in) throws IOException { ByteArrayOutputStream out = new ByteArrayOutputStream(); byte[] b = new byte[65536]; int n; while ((n=in.read(b))!=-1) out.write(b,0,n); return out.toByteArray(); }
