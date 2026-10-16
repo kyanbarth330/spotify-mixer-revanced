@@ -45,11 +45,34 @@ public class AndroidSmokeTest {
             waitText("Playlist Mixer").click();waitText("Playlist Alpha");waitText("Playlist Beta");
             UiObject2 slider=device.findObject(By.clazz("android.widget.SeekBar"));assertNotNull(slider);Rect bounds=slider.getVisibleBounds();device.click(bounds.left+bounds.width()*2/5,bounds.centerY());device.waitForIdle();
             assertNotEquals(70,context.getSharedPreferences(PREFS,0).getInt("ratio",70));
+            assertEquals("Playlist Alpha",context.getSharedPreferences(PREFS,0).getString("a_title",null));
+            assertEquals("Playlist Beta",context.getSharedPreferences(PREFS,0).getString("b_title",null));
             assertEquals("spotify:playlist:37i9dQZF1DXcBWIGoYBM5M",context.getSharedPreferences(PREFS,0).getString("a",null));
             assertEquals("spotify:playlist:37i9dQZF1DX0XUsuxWHRQd",context.getSharedPreferences(PREFS,0).getString("b",null));
             screenshot("03-playlist-mixer-two-selections");
             waitText("Back to SpotEnhancer").click();waitText("Diagnostics").click();waitText("Diagnostics");screenshot("04-diagnostics");
             waitText("Back to Spotify").click();waitText("Playlist Beta");waitText("SpotEnhancer");screenshot("05-return-to-fixture");
+        }finally{device.pressHome();}
+    }
+    @Test public void rejectsAmbiguousHeadings(){
+        try(androidx.test.core.app.ActivityScenario<FixtureActivity> scenario=androidx.test.core.app.ActivityScenario.launch(FixtureActivity.class)){
+            scenario.onActivity(activity->{
+                android.widget.LinearLayout root=new android.widget.LinearLayout(activity);root.setOrientation(1);activity.setContentView(root);
+                android.widget.TextView first=new android.widget.TextView(activity);first.setText("First title");first.setAccessibilityHeading(true);root.addView(first);
+                assertEquals("First title",org.example.spotifymixer.runtime.PlaylistTitle.visibleHeading(root));
+                android.widget.TextView second=new android.widget.TextView(activity);second.setText("Other title");second.setAccessibilityHeading(true);root.addView(second);
+                assertNull(org.example.spotifymixer.runtime.PlaylistTitle.visibleHeading(root));
+                android.os.Bundle metadata=new android.os.Bundle();metadata.putString("playlist_name","Explicit title");
+                assertEquals("Explicit title",org.example.spotifymixer.runtime.PlaylistTitle.from(metadata,root));
+            });
+        }
+    }
+    @Test public void installerShowsSafeInitialState(){
+        context.startActivity(new Intent().setClassName("org.example.spotifymixer.patcher","org.example.spotifymixer.patcher.InstallerActivity").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        try{
+            waitText("SpotEnhancer");waitText("1. Select APK and build SpotEnhancer");
+            assertFalse(waitText("2. Install patched Spotify").isEnabled());
+            screenshot("06-installer-initial-state");
         }finally{device.pressHome();}
     }
     @Test public void signOwnFixtureWithAndroidKeystore()throws Exception{

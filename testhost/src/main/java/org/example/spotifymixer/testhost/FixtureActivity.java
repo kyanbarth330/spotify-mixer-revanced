@@ -15,11 +15,11 @@ public final class FixtureActivity extends Activity {
     protected void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);library();}
     private LinearLayout content(String heading){
         root.removeAllViews();LinearLayout box=new LinearLayout(this);box.setOrientation(1);box.setPadding(24,100,24,24);
-        TextView title=new TextView(this);title.setText(heading);title.setTextSize(26);title.setTextColor(Color.WHITE);box.addView(title);
+        TextView title=new TextView(this);title.setText(heading);if(android.os.Build.VERSION.SDK_INT>=28)title.setAccessibilityHeading(true);title.setTextSize(26);title.setTextColor(Color.WHITE);box.addView(title);
         TextView notice=new TextView(this);notice.setText("Synthetic UI fixture · not Spotify");notice.setTextColor(Color.LTGRAY);box.addView(notice);root.addView(box);return box;
     }
     private void library(){LinearLayout box=content("Test library");button(box,"Playlist Alpha",()->playlist("Playlist Alpha","37i9dQZF1DXcBWIGoYBM5M"));button(box,"Playlist Beta",()->playlist("Playlist Beta","37i9dQZF1DX0XUsuxWHRQd"));Bundle args=new Bundle();args.putString("page_key","test.library");Mixer.fragmentResumed(new p.av10(new p.gs10(args,root)));}
-    private void playlist(String title,String id){LinearLayout box=content(title);TextView detail=new TextView(this);detail.setText("Original fixture data for testing selection only");detail.setTextColor(Color.WHITE);box.addView(detail);button(box,"Return to test library",()->library());Bundle args=new Bundle();args.putString("page_key","test.playlist");args.putString("playlist_name",title);args.putParcelable("parameters",new Parameters("spotify:playlist:"+id));Mixer.fragmentResumed(new p.av10(new p.gs10(args,root)));}
+    private void playlist(String title,String id){LinearLayout box=content(title);TextView detail=new TextView(this);detail.setText("Original fixture data for testing selection only");detail.setTextColor(Color.WHITE);box.addView(detail);button(box,"Return to test library",()->library());Bundle args=new Bundle();args.putString("page_key","test.playlist");args.putParcelable("parameters",new Parameters("spotify:playlist:"+id));Mixer.fragmentResumed(new p.av10(new p.gs10(args,root)));}
     private void button(LinearLayout box,String title,Runnable click){Button b=new Button(this);b.setText(title);b.setAllCaps(false);b.setOnClickListener(v->click.run());box.addView(b);}
     public static final class Parameters implements Parcelable {
         private final String uri;

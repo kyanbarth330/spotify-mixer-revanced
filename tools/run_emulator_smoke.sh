@@ -7,4 +7,6 @@ collect() {
   adb logcat -d -v time > emulator-evidence/logcat.txt || true
 }
 trap collect EXIT
+gradle :installer:assembleDebug --no-daemon
+adb install -r installer/build/outputs/apk/debug/installer-debug.apk
 gradle :testhost:connectedDebugAndroidTest --no-daemon

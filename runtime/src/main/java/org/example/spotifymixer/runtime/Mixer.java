@@ -57,6 +57,7 @@ public final class Mixer {
         for(Map.Entry<View,String[]> entry:new ArrayList<>(contexts.entrySet())){
             View root=entry.getKey();if(root==null || !root.isAttachedToWindow() || !root.isShown())continue;
             String[] value=entry.getValue();
+            if("Selected playlist".equals(value[1])){String title=PlaylistTitle.visibleHeading(root);if(title!=null)value[1]=title;}
             if(selected!=null && !selected[0].equals(value[0]))return null;
             selected=value;
         }
@@ -77,8 +78,8 @@ public final class Mixer {
                 Diagnostics.event(PageParameters.describe(bundle.get("parameters")));
                 Diagnostics.event("No unambiguous playlist identity");return;
             }
-            String title="Selected playlist";
-            for(String key:new String[]{"playlist_name","playlist_title","title","name"}){Object value=bundle.get(key);if(value instanceof String && !((String)value).isEmpty()){title=(String)value;break;}}
+            String title=PlaylistTitle.from(bundle,root);
+            if(title==null)title="Selected playlist";
             contexts.put(root,new String[]{uri,title});Diagnostics.event("Playlist context captured");
         }catch(ReflectiveOperationException | RuntimeException | LinkageError error){Diagnostics.event("Hook error: "+error.getClass().getSimpleName());Log.w("SpotEnhancer","Playlist context unavailable",error);}
     }
