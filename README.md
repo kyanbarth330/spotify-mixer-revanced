@@ -1,29 +1,30 @@
 # SpotEnhancer
 
-An independent, local Android installer for enhancements to the exact user-supplied Spotify 9.1.90.2270 APK. Spotify binaries are never distributed in this repository or CI artifacts.
+An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.4](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38827657914/artifacts/12015429833)
+## [Download SpotEnhancer 0.5](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38828901876/artifacts/12016326625)
 
-- A dedicated **SpotEnhancer** Activity with **Back to Spotify**, replacing the floating Mixer button/dialog.
-- A **Playlist Mixer** screen inside SpotEnhancer, ready for additional features on the home screen.
-- Contextual **Add to Mixer** and **SpotEnhancer** actions on supported playlist fragment views. Add to Mixer carries the playlist identity from Spotify's fragment arguments; choose Playlist A or B without typing/pasting a URL.
-- Saved playlist selections and ratio. All project UI labels are English.
+Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
 
-Playback/queue mixing remains unimplemented. Version 0.4's new playlist integration and Activity still need device confirmation. Version 0.3 startup, login and menu opening were confirmed working by the user.
+## Entirely inside Spotify
 
-## Install
+A fixed navigation row reserves space in Spotify's Activity content layout; it does not float over content. **SpotEnhancer** opens the private enhancement screen. **Back to Spotify** returns to Spotify.
 
-Download `spotify-mixer-installer` from a successful [installer workflow](../../actions/workflows/build-installer.yml) run on branch `codex/mixer-installer`. The historical artifact name/package ID remain unchanged; the app label is **SpotEnhancer Installer**. Extract and install `installer-debug.apk`, select the original supported APK, build, then start Android installation.
+For playlist selection: **SpotEnhancer → Playlist Mixer → Choose Playlist A/B** opens Spotify's own playlist library. Open a playlist and tap **Add to Mixer** in the in-app row to assign the chosen slot. There is no URL input, clipboard, share sheet, external shortcut or separate app workflow. All project labels are English.
 
-Open a playlist in Spotify. The inline row has **Add to Mixer** and **SpotEnhancer**. The former opens playlist assignment; the latter opens the enhancement home. **Back to Spotify** finishes the enhancement Activity and returns to Spotify's existing screen.
+The contextual action is enabled only when the hook captures an unambiguous visible playlist identity. If it remains disabled, open **SpotEnhancer → Diagnostics** after visiting the playlist. The report shows hook counts/view types/argument key names, not playlist names or URLs. Device confirmation of 0.5's row and context detection is still pending. The user's 0.4 screenshot showed the previous contextual row missing; this is not claimed to have been proven fixed by a build.
 
-CI currently produces fresh debug installer certificates. Updating an older installer may require removing it; this loses its Android Keystore signing key, so the previously patched Spotify cannot be updated with a newly generated key. Reinstalling Spotify removes local data/downloads. Nothing is uninstalled automatically. Stable installer signing is still a development limitation.
+Playlist choices and ratio are saved. Actual playback/queue mixing is not implemented. The home screen is ready for additional enhancement features.
+
+## Existing development installations
+
+CI currently creates fresh debug installer certificates. Updating an older installer can require removing it; removing/clearing the installer loses its device-local Spotify signing key. Reinstalling Spotify then removes local data/downloads. Nothing is uninstalled automatically. Stable installer signing remains a development limitation.
 
 ## Supported input
 
-Package `com.spotify.music`, version 9.1.90.2270, code 147078674, exact SHA-256 `5c05366de31788fd0eec6e046c3610311acf5e63c15345e5bdaca6e8f09fb3b4`. Other APKs and split installs are rejected. Android API 24+; reserve at least 1 GB free storage.
+Package `com.spotify.music`, version 9.1.90.2270, code 147078674, SHA-256 `5c05366de31788fd0eec6e046c3610311acf5e63c15345e5bdaca6e8f09fb3b4`. Other APKs and split installations are rejected. Android API 24+, at least 1 GB free storage.
 
-## Build and validation
+## Build
 
 JDK 17, Gradle 8.10.2, Android SDK platform 35:
 
@@ -32,6 +33,6 @@ gradle :engine:test :runtime:testDebugUnitTest :installer:assembleDebug
 python3 tools/check_installer_runtime.py installer/build/outputs/apk/debug/installer-debug.apk
 ```
 
-See [validation evidence](docs/VALIDATION.md) and [implementation](docs/INSTALLER.md). The installer bundles every DEX from our original runtime module and verifies that the menu helper exists. No original or patched Spotify APK, private key or proprietary source is committed.
+The installer bundles every DEX from the original runtime module. See [validation evidence](docs/VALIDATION.md) and [implementation](docs/INSTALLER.md). No original/patched Spotify APK, proprietary source or private key is committed.
 
-Not affiliated with Spotify or ReVanced. There are no premium, advertisement, DRM or authentication patches.
+Not affiliated with Spotify or ReVanced. No premium, advertisement, DRM or authentication patches.

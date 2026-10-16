@@ -1,4 +1,4 @@
-# SpotEnhancer 0.4 implementation
+# SpotEnhancer implementation
 
 The `installer` module is the only distributed APK. The `runtime` module provides original screens/playlist selection code; all its DEX files are bundled into `mixer-runtime.zip`. The internal package names remain unchanged for continuity.
 
@@ -7,7 +7,7 @@ The `installer` module is the only distributed APK. The `runtime` module provide
 1. Copy the selected original APK into private cache; verify exact SHA-256 and original signature.
 2. Validate the bundled runtime helper and every runtime class definition.
 3. Add one private, non-exported `org.example.spotifymixer.runtime.SpotEnhancerActivity` to the binary manifest. Preserve every original manifest string index and all original XML nodes. No Spotify resource IDs or permissions are changed.
-4. Retain the original main-activity lifecycle call to `Mixer.attach(Activity)`; it no longer creates a floating control.
+4. Retain the original main-activity lifecycle call to `Mixer.attach(Activity)`; it now creates a fixed, reserved-space in-app navigation row instead of a floating control.
 5. Hook the verified fragment state manager `p.av10.n()V` to call `Mixer.fragmentResumed(Object)`. The original `classes.dex` already has 65,536 method references. Move the patched class into an appended DEX to avoid overflowing its method table; every original class descriptor is preserved exactly once.
 6. Append every original runtime DEX and the relocated fragment class. Preserve all other APK payloads, strip obsolete signature/source-stamp metadata, align STORED entries, and sign with the device's Android Keystore key using v2/v3 signatures.
 7. Verify output signatures and open Android's installation confirmation through FileProvider. No silent install, root or automatic uninstall.
@@ -27,3 +27,11 @@ SpotEnhancer is a normal private Android Activity inside Spotify, not an AlertDi
 ## Development signing
 
 GitHub debug installer keys currently differ between builds. Removing the installer loses its device-local Spotify signing key. An older patched Spotify cannot then be updated with the newly generated certificate; reinstalling loses local data/downloads. This is a known limitation, not an automatic installer action.
+
+## Version 0.5 changes
+
+`Mixer.attach` now places the navigation row in Android's guaranteed `android.R.id.content` FrameLayout. It reserves top space and accounts for the status inset; it does not create a WindowManager overlay. This makes panel access independent of Spotify's playlist fragment/root type. A guarded layout observer updates the contextual button only when its state/text changes.
+
+Playlist identity capture no longer rejects a valid playlist just because its fragment root is not a FrameLayout. Captured roots are held weakly, and only attached/shown roots are considered. Conflicting identities disable selection. URI values may be Strings or Android Uri objects; legacy Spotify user-playlist identities are normalized. Root classes/argument keys and resume counts are recorded in memory without playlist identities or names.
+
+The selection buttons persist the chosen slot and navigate to the verified `spotify:collection:playlists` route inside Spotify. A detected playlist can be assigned from the in-app navigation row. The Activity remains private. There are no external launcher/share aliases, share sheets or installer-based panel entry points.

@@ -80,3 +80,13 @@ Local checks so far:
 - No source or Spotify APK is uploaded for validation; the proprietary test output stays local.
 
 The [version 0.4 build](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38827657914) succeeded, including the final installer payload check. Artifact `12015429833` was downloaded and inspected: it contains two runtime DEX files and 18 original runtime classes, including SpotEnhancerActivity and the playlist bridge. Local patch/sign/inventory verification was repeated using this exact downloaded runtime, with valid v2/v3 output signatures and the same 4,859 preserved entries. The private Activity registration and all original class descriptors were checked again.
+
+## Version 0.5 — screenshot follow-up
+
+The user's 0.4 screenshot shows no SpotEnhancer row. It does not identify whether the failure is the fragment hook, URI extraction, root compatibility or placement. Earlier static validation must not be treated as proof that this row worked on the device.
+
+The final 0.5 implementation keeps all interaction inside Spotify: a fixed in-app navigation row provides panel access, Choose Playlist A/B opens Spotify's own playlist library, and a context-aware Add to Mixer action assigns the detected playlist. The fragment context bridge no longer requires a FrameLayout root. A diagnostics page records hook counts/view types/key names for a precise follow-up if detection still fails. No external share or launcher route is included.
+
+Four engine tests and four playlist identity tests pass locally. Two Python parser tests pass. The Spotify playlist-library route string was verified in the supplied APK. Actual in-app placement/context selection still requires device confirmation; selection is disabled if no unambiguous visible playlist identity is found.
+
+The final in-app-only [0.5 build 38828901876](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38828901876) succeeded. Its `spotenhancer-installer` artifact (12016326625) was downloaded and checked: two runtime DEX files, 25 original runtime classes and the required screen/context/diagnostic helpers. Local integration was repeated with this exact runtime and the current engine source. Patch/sign verification passed; 4,859 retained entries were unchanged. The output retained all 102,449 original class descriptors with no duplicates, registered one private SpotEnhancer Activity, and contained no external SpotEnhancer launcher/share aliases. These checks do not replace a device test of the navigation row or URI capture.
