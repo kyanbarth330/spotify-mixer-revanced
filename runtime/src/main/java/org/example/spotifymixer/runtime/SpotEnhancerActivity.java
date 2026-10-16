@@ -17,7 +17,6 @@ public final class SpotEnhancerActivity extends Activity {
         setTheme(android.R.style.Theme_Material_NoActionBar);super.onCreate(state);
         prefs=getSharedPreferences(Mixer.PREFS,0);
         pending=PlaylistUri.normalize(getIntent().getStringExtra("playlist"));
-        if(pending==null && Intent.ACTION_SEND.equals(getIntent().getAction())){CharSequence shared=getIntent().getCharSequenceExtra(Intent.EXTRA_TEXT);pending=PlaylistUri.fromSharedText(shared==null?null:shared.toString());}
         title=getIntent().getStringExtra("title");
         if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0,() -> back());
         if(pending!=null || state!=null && state.getBoolean("mixer"))showMixer();else home();
@@ -44,8 +43,9 @@ public final class SpotEnhancerActivity extends Activity {
         TextView ratio=text(box,"",18);SeekBar slider=new SeekBar(this);slider.setMax(100);slider.setProgress(prefs.getInt("ratio",70));
         ratio.setText("A: "+slider.getProgress()+"%   B: "+(100-slider.getProgress())+"%");
         slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){public void onProgressChanged(SeekBar s,int n,boolean user){ratio.setText("A: "+n+"%   B: "+(100-n)+"%");if(user)prefs.edit().putInt("ratio",n).apply();}public void onStartTrackingTouch(SeekBar s){}public void onStopTrackingTouch(SeekBar s){}});box.addView(slider);
-        text(box,"Open a playlist in Spotify and use Share → More → Add to Mixer · SpotEnhancer. No copying or typing is needed.",16);
-        button(box,"Choose a playlist in Spotify",()->returnToSpotify());
+        text(box,"Choose a playlist below, then tap Add to Mixer in Spotify. No URL entry or share sheet is needed.",16);
+        button(box,"Choose Playlist A",()->choose("a"));
+        button(box,"Choose Playlist B",()->choose("b"));
         text(box,"Playlist selection and ratio are saved. Playback mixing is not available yet.",14);
         button(box,"Back to SpotEnhancer",()->{pending=null;home();});
     }
@@ -55,11 +55,17 @@ public final class SpotEnhancerActivity extends Activity {
         text(box,"Open a playlist in Spotify first, then return here. This report contains class names and argument keys, not playlist URLs or names.",14);
         button(box,"Back to SpotEnhancer",()->home());
     }
+    private void choose(String slot){
+        prefs.edit().putString("pending_slot",slot).apply();
+        startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("spotify:collection:playlists")).setPackage(getPackageName()).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
+        finish();
+        Toast.makeText(this,"Open a playlist, then tap Add to Mixer",Toast.LENGTH_LONG).show();
+    }
     private void returnToSpotify(){
         if(!getIntent().getBooleanExtra("from_spotify",false))startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setClassName(getPackageName(),"com.spotify.music.MainActivity").addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP));
         finish();
     }
-    private void save(String slot){prefs.edit().putString(slot,pending).putString(slot+"_title",title==null?"Selected playlist":title).apply();pending=null;showMixer();Toast.makeText(this,"Playlist "+slot.toUpperCase(java.util.Locale.ROOT)+" selected",Toast.LENGTH_SHORT).show();}
+    private void save(String slot){prefs.edit().remove("pending_slot").putString(slot,pending).putString(slot+"_title",title==null?"Selected playlist":title).apply();pending=null;showMixer();Toast.makeText(this,"Playlist "+slot.toUpperCase(java.util.Locale.ROOT)+" selected",Toast.LENGTH_SHORT).show();}
     private TextView text(LinearLayout box,String value,int size){TextView t=new TextView(this);t.setText(value);t.setTextColor(Color.WHITE);t.setTextSize(size);t.setPadding(0,12,0,12);box.addView(t);return t;}
     private void button(LinearLayout box,String label,Runnable action){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setOnClickListener(v->action.run());box.addView(b);}
 }

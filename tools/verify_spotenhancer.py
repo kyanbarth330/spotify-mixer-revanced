@@ -21,8 +21,7 @@ def verify(original,patched):
                 if strings[struct.unpack_from('<I',data,p+20)[0]]=='activity-alias' and attrs.get('targetActivity')=='org.example.spotifymixer.runtime.SpotEnhancerActivity':aliases.append(attrs)
             p+=size
         assert len(found)==1 and found[0].get('exported')==0,'Missing private SpotEnhancer Activity'
-        assert {a['name'] for a in aliases}=={'org.example.spotifymixer.runtime.SpotEnhancerEntry','org.example.spotifymixer.runtime.AddToMixer'},'Missing launcher/share aliases'
-        assert all(a.get('exported')==1 for a in aliases),'Aliases not reachable'
+        assert not aliases,'External SpotEnhancer entry points must not be added'
         def classes(z):
             result=[]
             for name in z.namelist():

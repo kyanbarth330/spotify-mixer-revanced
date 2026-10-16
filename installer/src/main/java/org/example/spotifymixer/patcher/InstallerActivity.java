@@ -37,11 +37,6 @@ public final class InstallerActivity extends Activity {
         install.setOnClickListener(v -> new AlertDialog.Builder(this).setTitle("Install patched Spotify")
             .setMessage("The certificate differs from original Spotify. Android may reject an update. Uninstalling Spotify removes local data and downloads. This installer never uninstalls apps automatically.")
             .setPositiveButton("Continue", (d,w) -> launchInstall()).setNegativeButton("Cancel", null).show());
-        Button openPanel=new Button(this);openPanel.setText("Open SpotEnhancer");box.addView(openPanel);
-        openPanel.setOnClickListener(v -> {
-            try { startActivity(new Intent().setClassName("com.spotify.music","org.example.spotifymixer.runtime.SpotEnhancerEntry")); }
-            catch (android.content.ActivityNotFoundException e) { update("Install Spotify patched with SpotEnhancer 0.5 first."); }
-        });
         setContentView(box);
         // Never offer an output left by an interrupted or previous session without verification.
         signed.delete();

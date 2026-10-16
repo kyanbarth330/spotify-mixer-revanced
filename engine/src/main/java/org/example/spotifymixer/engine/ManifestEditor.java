@@ -29,9 +29,6 @@ final class ManifestEditor {
         }
         if(strings==null||insert<0||strings.contains(ACTIVITY))throw new IOException("Unexpected manifest structure");
         int activity=index(strings,"activity"),name=index(strings,"name"),exported=index(strings,"exported"),ns=index(strings,"http://schemas.android.com/apk/res/android"),value=index(strings,ACTIVITY);
-        int alias=index(strings,"activity-alias"),label=index(strings,"label"),target=index(strings,"targetActivity"),filter=index(strings,"intent-filter"),action=index(strings,"action"),category=index(strings,"category"),dataTag=index(strings,"data"),mime=index(strings,"mimeType");
-        int entry=index(strings,"org.example.spotifymixer.runtime.SpotEnhancerEntry"),share=index(strings,"org.example.spotifymixer.runtime.AddToMixer"),appLabel=index(strings,"SpotEnhancer"),shareLabel=index(strings,"Add to Mixer · SpotEnhancer");
-        int main=index(strings,"android.intent.action.MAIN"),launcher=index(strings,"android.intent.category.LAUNCHER"),send=index(strings,"android.intent.action.SEND"),def=index(strings,"android.intent.category.DEFAULT"),plain=index(strings,"text/plain");
         ByteArrayOutputStream data=new ByteArrayOutputStream();int[] offsets=new int[strings.size()];
         for(int i=0;i<strings.size();i++){offsets[i]=data.size();byte[] utf=strings.get(i).getBytes(StandardCharsets.UTF_8);writeLen(data,strings.get(i).length());writeLen(data,utf.length);data.write(utf);data.write(0);}
         while(data.size()%4!=0)data.write(0);
@@ -40,10 +37,6 @@ final class ManifestEditor {
         for(int off:offsets)sp.putInt(off);sp.put(data.toByteArray());pool=sp.array();
         ByteArrayOutputStream nodes=new ByteArrayOutputStream();
         start(nodes,activity,new int[][]{{ns,name,value,3,value},{ns,exported,-1,18,0}});end(nodes,activity);
-        start(nodes,alias,new int[][]{{ns,label,appLabel,3,appLabel},{ns,name,entry,3,entry},{ns,exported,-1,18,1},{ns,target,value,3,value}});
-        start(nodes,filter,new int[0][]);start(nodes,action,new int[][]{{ns,name,main,3,main}});end(nodes,action);start(nodes,category,new int[][]{{ns,name,launcher,3,launcher}});end(nodes,category);end(nodes,filter);end(nodes,alias);
-        start(nodes,alias,new int[][]{{ns,label,shareLabel,3,shareLabel},{ns,name,share,3,share},{ns,exported,-1,18,1},{ns,target,value,3,value}});
-        start(nodes,filter,new int[0][]);start(nodes,action,new int[][]{{ns,name,send,3,send}});end(nodes,action);start(nodes,category,new int[][]{{ns,name,def,3,def}});end(nodes,category);start(nodes,dataTag,new int[][]{{ns,mime,plain,3,plain}});end(nodes,dataTag);end(nodes,filter);end(nodes,alias);
         ByteArrayOutputStream out=new ByteArrayOutputStream();out.write(xml,0,poolStart);out.write(pool);out.write(xml,poolEnd,insert-poolEnd);out.write(nodes.toByteArray());out.write(xml,insert,xml.length-insert);
         byte[] result=out.toByteArray();ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN).putInt(4,result.length);return result;
     }
