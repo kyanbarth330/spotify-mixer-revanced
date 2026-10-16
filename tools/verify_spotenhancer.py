@@ -34,5 +34,7 @@ def verify(original,patched):
         assert 'Lorg/example/spotifymixer/runtime/SpotEnhancerActivity;' in newclasses
         moved=parse(after.read(sorted((n for n in after.namelist() if n.endswith('.dex')),key=lambda n:1 if n=='classes.dex' else int(n[7:-4]))[-1]),pattern=r'^Lp/av10;$')
         assert len(moved)==1,'Fragment state manager was not relocated'
+        maker=parse(after.read(sorted((n for n in after.namelist() if n.endswith('.dex')),key=lambda n:1 if n=='classes.dex' else int(n[7:-4]))[-1]),pattern=r'^Lcom/spotify/connectivity/httpretrofit/RetrofitMaker;$')
+        assert len(maker)==1,'Search client factory was not relocated'
         print(f'PASS: private Activity, original manifest string indexes, {len(oldclasses)} original classes retained, no duplicate classes, relocated fragment hook')
 if __name__=='__main__':verify(*sys.argv[1:])

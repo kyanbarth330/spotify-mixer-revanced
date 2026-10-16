@@ -21,7 +21,7 @@ def check(path):
     assert 'Lorg/example/spotifymixer/runtime/PageParameters;' in types, 'Missing page-parameters reader'
     assert 'Lorg/example/spotifymixer/runtime/PlaylistTitle;' in types, 'Missing playlist title helper'
     assert 'Lorg/example/spotifymixer/ui/EnhancerTheme;' in types, 'Missing shared UI helper'
-    for name in ['NativeBridge','PlaylistWire','MixSession','MixPlanner','FullMixPlanner','MixConfig','MixLibrary','PlaylistAction','CreatorSession','CreatorPanel']:
+    for name in ['NativeBridge','PlaylistWire','MixSession','MixPlanner','FullMixPlanner','MixConfig','MixLibrary','PlaylistAction','CreatorSession','CreatorPanel','CreatorWire','NativeCreator']:
         assert 'Lorg/example/spotifymixer/runtime/'+name+';' in types, 'Missing mixer helper: '+name
     for name in ['EnhancerPanel','EnhancerIcon']:
         assert 'Lorg/example/spotifymixer/ui/'+name+';' in types, 'Missing panel helper: '+name

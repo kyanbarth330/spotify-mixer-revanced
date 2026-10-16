@@ -1,0 +1,1 @@
+package io.reactivex.rxjava3.core;public final class Single {private final Object value;public Single(Object value){this.value=value;}public Single timeout(long duration,java.util.concurrent.TimeUnit unit){return this;}public Object blockingGet(){return value;}}

@@ -1,23 +1,23 @@
-# Playlist Creator — current scope
+# Playlist Creator — 0.14 experimental native integration
 
-## Available in production
+## Current flow
 
-Open SpotEnhancer -> Tools -> Playlist Creator. Enable the default-off switch, fill a name and at least one of genres/artists/music preferences, choose 1–500 tracks, and Save draft. The draft and feature switch commit to device storage. Switching off disables the form and invalidates any current proposal. Saved preferences are retained. Draft saving does not create a playlist.
+Green wrench -> Playlist Creator -> Enable -> name + genres/artists/search keywords + 1–500 tracks -> Generate preview -> review/remove -> Create Playlist -> confirm. Names start `SpotEnhancer-`. Open a normal playlist and Refresh connection if the search/playlist services are waiting. Everything remains in Spotify. No autoplay, URL entry, OAuth handoff, token extraction or external AI service.
 
-Production has **no backend**: Generate preview is disabled and there is no Create Playlist action. The panel states this explicitly. No source-playlist mixing is presented as genre recommendation and no text-to-music AI is claimed. Version 0.12 remains the last fully evidenced mixer delivery until the new build evidence is recorded.
+Genres and artists use quoted Spotify search filters. Music preferences are literal keywords, not semantic AI interpretation. Multiple comma-separated selectors produce at most 12 combinations; their native search results are interleaved and deduplicated. Each request fetches 50 results with real titles/artists and page tokens, at most 20 rounds per combination. Insufficient unique matches fail visibly rather than silently lowering the count. Removing preview tracks explicitly lowers the confirmed count. Server-side restrictions/errors remain in effect; actual live search relevance and server count limits need device evidence.
 
-## Implemented transaction and original fixture
+## Native creation and recovery
 
-CreatorSession accepts a typed request and backend interface. A backend must supply unique canonical Spotify track identities with names/artists; duplicate IDs are collapsed. Fewer matches than requested is an error, not silent short output. Users can remove proposed tracks; confirmation uses the actual remaining count. The final track cannot be removed. A preview is immutable and replacement/removal/invalidation makes an old preview unusable.
+The original initialized authenticated RetrofitMaker supplies the search API; existing captured playlist service supplies CoroutineTransport. A single native RootlistModificationService.Modify creates the playlist with reviewed track URIs. Name/count/order are read back through the existing native playlist loader before success is displayed. Only reads retry (three attempts); creation is never retried automatically. No deletion or rollback is attempted.
 
-Only explicit confirmation invokes backend.create. A preview can be submitted once; it is consumed before I/O. No failed or ambiguous write is retried automatically. A receipt must identify a canonical playlist URI and confirm the exact `SpotEnhancer-` name and reviewed count. A missing/mismatched receipt is an unconfirmed outcome. The future native adapter must verify creation AND ordered item insertion before returning that receipt, handle partial failure and reconcile operation IDs. A failure can leave a partially created playlist; UI tells users to check Spotify before retrying. An already dispatched remote write cannot be undone by closing the panel.
+Before writing, an unfinished record (operation ID, name, track IDs) commits locally. The acknowledged playlist identity is then committed. If any response or readback is uncertain, the record remains and blocks new generation, including across process restart. Check previous creation performs reads only when an identity is available. With no identity, users must inspect their Spotify library. Clear unfinished request requires explicit acknowledgement and permits another write, which can produce duplicates if a prior playlist already exists. Existing playlists are never deleted. An already dispatched remote write cannot be undone by closing the panel. Turning the feature off prevents new generation/creation and retains drafts/recovery state.
 
-CreatorFixtureActivity is testhost-only deterministic data, labelled SYNTHETIC FIXTURE — NOT SPOTIFY. It reuses CreatorPanel with an own backend, stores no credentials, calls no network and creates no Spotify playlist. It is not included in installer runtime DEX. No production intent extra can enable this fixture backend.
+## Supported input and test limits
 
-## Missing native integration
+Exact 9.1.90.2270 SHA remains pinned. Its methods, field numbers and creation call pattern were inspected privately. Original classes.dex is full, so RetrofitMaker is relocated alongside the existing fragment manager and its four constructor returns capture the initialized factory; classes2 receives no new method reference. The supplied 9.1.92 APK is not supported and is not silently accepted.
 
-The exact user-supplied Spotify APK is not present in the current workspace. Existing NativeBridge supports known-playlist reads and playback only. Search/ranking and write schemas cannot be safely guessed. The next step needs the pinned original APK, then local-only verification of native search/results, preference interpretation, account-owned creation, item addition, pagination, availability, count limits, permissions/restrictions and readback. Account/device evidence is needed after build/own-fixture checks. Do not upload Spotify binaries, decompiled source or keys to GitHub or public emulator runners.
+CreatorSession unit tests cover exact counts, immutable review, stale/consumed previews, confirmation and ambiguous writes. CreatorWire tests cover nested track metadata, filtering, malformed protobuf, native create envelope/status/identity and queries. Handwritten testhost protocol doubles exercise the actual NativeCreator reflection path, creator serialization and name/count/order readback plus pending recovery, without Spotify code, credentials or network. They are confined to testhost and not bundled in installer runtime. These tests do not prove a live Spotify account playlist was created. Only own installer and own fixture evidence may be published.
 
-## Feature backlog
+## Historical 0.13
 
-The selected enhancements in NEXT_SESSION.md remain requirements; they are not implemented by this creator foundation. Each needs an independent persisted toggle, disabled by default, and an honest unavailable state until its native behavior is verified.
+0.13 provided the saved draft form and fixture transaction only, with production generation disabled. It is superseded by the native code above; final 0.14 build/device evidence belongs in VALIDATION.md. No other requested enhancement is included in this release.

@@ -8,8 +8,19 @@ import org.jf.dexlib2.writer.io.*;import org.jf.dexlib2.writer.pool.*;
 final class PlaylistHook {
     static byte[][] patch(byte[] original)throws Exception {
         DexBackedDexFile dex=new DexBackedDexFile(Opcodes.forApi(24),original);
-        List<ClassDef> kept=new ArrayList<>();ClassDef moved=null;int count=0;
+        List<ClassDef> kept=new ArrayList<>();List<ClassDef> moved=new ArrayList<>();int count=0,makerCount=0;
         for(ClassDef cls:dex.getClasses()){
+            if(cls.getType().equals("Lcom/spotify/connectivity/httpretrofit/RetrofitMaker;")){
+                List<Method> constructors=new ArrayList<>();
+                for(Method m:cls.getMethods()){
+                    if(!m.getName().equals("<init>")){constructors.add(m);continue;}
+                    if(m.getImplementation()==null)throw new IOException("Missing RetrofitMaker constructor");
+                    MutableMethodImplementation impl=new MutableMethodImplementation(m.getImplementation());int self=impl.getRegisterCount()-m.getParameterTypes().size()-1;
+                    for(int i=impl.getInstructions().size()-1;i>=0;i--)if(impl.getInstructions().get(i).getOpcode()==Opcode.RETURN_VOID)impl.addInstruction(i,new BuilderInstruction3rc(Opcode.INVOKE_STATIC_RANGE,self,1,new ImmutableMethodReference("Lorg/example/spotifymixer/runtime/NativeCreator;","captureMaker",Collections.singletonList("Ljava/lang/Object;"),"V")));
+                    constructors.add(new ImmutableMethod(m.getDefiningClass(),m.getName(),m.getParameters(),m.getReturnType(),m.getAccessFlags(),m.getAnnotations(),m.getHiddenApiRestrictions(),impl));makerCount++;
+                }
+                moved.add(new ImmutableClassDef(cls.getType(),cls.getAccessFlags(),cls.getSuperclass(),cls.getInterfaces(),cls.getSourceFile(),cls.getAnnotations(),cls.getFields(),constructors));continue;
+            }
             if(!cls.getType().equals("Lp/av10;")){kept.add(cls);continue;}
             List<Method> methods=new ArrayList<>();
             for(Method m:cls.getMethods()){
@@ -20,12 +31,12 @@ final class PlaylistHook {
                     new ImmutableMethodReference("Lorg/example/spotifymixer/runtime/Mixer;","fragmentResumed",Collections.singletonList("Ljava/lang/Object;"),"V")));
                 methods.add(new ImmutableMethod(m.getDefiningClass(),m.getName(),m.getParameters(),m.getReturnType(),m.getAccessFlags(),m.getAnnotations(),m.getHiddenApiRestrictions(),impl));count++;
             }
-            moved=new ImmutableClassDef(cls.getType(),cls.getAccessFlags(),cls.getSuperclass(),cls.getInterfaces(),cls.getSourceFile(),cls.getAnnotations(),cls.getFields(),methods);
+            moved.add(new ImmutableClassDef(cls.getType(),cls.getAccessFlags(),cls.getSuperclass(),cls.getInterfaces(),cls.getSourceFile(),cls.getAnnotations(),cls.getFields(),methods));
         }
-        if(count!=1 || moved==null)throw new IOException("Expected one fragment resume hook");
+        if(count!=1 || makerCount!=4)throw new IOException("Expected one fragment hook and four RetrofitMaker constructors");
         // classes.dex has 65,536 method references. Move the patched class to its own DEX
         // rather than overflowing its 16-bit method-reference table.
-        return new byte[][]{write(dex.getOpcodes(),kept),write(dex.getOpcodes(),Collections.singletonList(moved))};
+        return new byte[][]{write(dex.getOpcodes(),kept),write(dex.getOpcodes(),moved)};
     }
     private static byte[] write(Opcodes op,List<? extends ClassDef> classes)throws IOException{MemoryDataStore out=new MemoryDataStore();DexPool.writeTo(out,new ImmutableDexFile(op,classes));return out.getData();}
 }

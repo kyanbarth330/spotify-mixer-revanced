@@ -92,6 +92,18 @@ public class AndroidSmokeTest {
             waitText("Create Playlist").click();UiObject2 confirm=device.wait(Until.findObject(By.res("android:id/button1")),4000);assertNotNull(confirm);confirm.click();waitText("Created SpotEnhancer-Evening · 2 tracks");assertEquals(1,CreatorFixtureActivity.writes);assertEquals(2,CreatorFixtureActivity.written.size());screenshot("12-creator-synthetic-receipt");
         }
     }
+    @Test public void nativeCreatorUsesOriginalAdaptersAndVerifiesReadback()throws Exception{
+        android.content.SharedPreferences prefs=context.getSharedPreferences("creator-native-protocol",0);prefs.edit().clear().commit();
+        org.example.spotifymixer.runtime.CreatorProtocolFixture.writes=0;org.example.spotifymixer.runtime.CreatorProtocolFixture.wrongReadback=false;
+        org.example.spotifymixer.runtime.NativeCreator.captureMaker(new com.spotify.connectivity.httpretrofit.RetrofitMaker());org.example.spotifymixer.runtime.NativeBridge.capturePlaylist(new org.example.spotifymixer.runtime.CreatorProtocolFixture());
+        try{
+            org.example.spotifymixer.runtime.NativeCreator backend=new org.example.spotifymixer.runtime.NativeCreator(prefs);org.example.spotifymixer.runtime.CreatorSession session=new org.example.spotifymixer.runtime.CreatorSession(backend);
+            org.example.spotifymixer.runtime.CreatorSession.Preview proposal=session.prepare(new org.example.spotifymixer.runtime.CreatorSession.Request("Protocol test","rock","","",3),m->{});assertEquals("Protocol song 1",proposal.tracks.get(0).title);assertEquals(0,org.example.spotifymixer.runtime.CreatorProtocolFixture.writes);
+            proposal=session.remove(proposal,proposal.tracks.get(1).uri);org.example.spotifymixer.runtime.CreatorSession.Receipt receipt=session.create(proposal);assertEquals("SpotEnhancer-Protocol test",receipt.name);assertEquals(2,receipt.count);assertEquals(1,org.example.spotifymixer.runtime.CreatorProtocolFixture.writes);assertFalse(backend.pending());
+            proposal=session.prepare(new org.example.spotifymixer.runtime.CreatorSession.Request("Mismatch test","rock","","",2),m->{});org.example.spotifymixer.runtime.CreatorProtocolFixture.wrongReadback=true;try{session.create(proposal);fail();}catch(java.io.IOException expected){}assertTrue(backend.pending());assertEquals(2,org.example.spotifymixer.runtime.CreatorProtocolFixture.writes);
+            try{session.prepare(new org.example.spotifymixer.runtime.CreatorSession.Request("Retry","rock","","",2),m->{});fail();}catch(java.io.IOException expected){}assertEquals(2,org.example.spotifymixer.runtime.CreatorProtocolFixture.writes);org.example.spotifymixer.runtime.CreatorProtocolFixture.wrongReadback=false;assertEquals(2,backend.verifyPending().count);assertFalse(backend.pending());assertEquals(2,org.example.spotifymixer.runtime.CreatorProtocolFixture.writes);
+        }finally{org.example.spotifymixer.runtime.NativeCreator.captureMaker(null);org.example.spotifymixer.runtime.NativeBridge.capturePlaylist(null);}
+    }
     @Test public void reusedFragmentReadsReplacementArguments()throws Exception{
         try(androidx.test.core.app.ActivityScenario<FixtureActivity> scenario=androidx.test.core.app.ActivityScenario.launch(FixtureActivity.class)){
             final p.gs10[] fragment={null};

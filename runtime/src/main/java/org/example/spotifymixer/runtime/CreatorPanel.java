@@ -6,23 +6,26 @@ import org.example.spotifymixer.ui.EnhancerPanel;
 /** Shared real form/preview UI. Production has no backend until the native contract is verified. */
 public final class CreatorPanel {
     private final Activity activity;private final SharedPreferences prefs;private final CreatorSession session;
-    private final LinearLayout body;private final Handler main=new Handler(Looper.getMainLooper());
+    private final NativeCreator nativeBackend;private final LinearLayout body;private final Handler main=new Handler(Looper.getMainLooper());
     private final EditText name,genres,artists,description,count;private final Switch enabled;private final Button generate,save;
     private final TextView feedback,naming;private final LinearLayout previewBody;private CreatorSession.Preview preview;
     private int generation;private boolean closed,busy;
     public CreatorPanel(Activity activity,LinearLayout body,SharedPreferences prefs,CreatorSession.Backend backend){
-        this.activity=activity;this.body=body;this.prefs=prefs;session=backend==null?null:new CreatorSession(backend);
-        label(body,"Find your next playlist",24,true);muted(body,"Choose genres, artists or describe the music you want. Review every proposal before creating a playlist.");
+        this.activity=activity;this.body=body;this.prefs=prefs;nativeBackend=backend instanceof NativeCreator?(NativeCreator)backend:null;session=backend==null?null:new CreatorSession(backend);
+        label(body,"Find your next playlist",24,true);muted(body,"Choose genres, artists or describe the music you want. Uses Spotify search keywords, not AI. Review every proposal before creating a playlist.");
         enabled=new Switch(new ContextThemeWrapper(activity,android.R.style.Theme_Material_NoActionBar));enabled.setText("Enable Playlist Creator");enabled.setTextColor(EnhancerPanel.WHITE);EnhancerPanel.styleSwitch(enabled);enabled.setChecked(prefs.getBoolean("creator_enabled",false));body.addView(enabled);
         LinearLayout form=EnhancerPanel.card(body);
         name=field(form,"Playlist name","e.g. Evening rock","creator_name",80,false);
         naming=muted(form,"");genres=field(form,"Genres","e.g. rock, soul","creator_genres",200,false);
         artists=field(form,"Artists","e.g. Dire Straits, Sade","creator_artists",200,false);
-        description=field(form,"Music preferences","e.g. relaxed guitar music for an evening drive","creator_description",500,false);
+        description=field(form,"Music preferences","Search keywords, e.g. acoustic guitar","creator_description",500,false);
         count=field(form,"Number of tracks","1–500","creator_count",3,true);if(count.getText().length()==0)count.setText("30");
-        feedback=muted(body,backend==null?"Spotify generation is unavailable in this build. You can save your preferences; no playlist will be created.":"Ready to generate a proposal. Nothing is created before confirmation.");
+        feedback=muted(body,backend==null?"Spotify generation is unavailable in this build. You can save your preferences; no playlist will be created.":nativeBackend!=null&&!NativeCreator.ready()?"Open a playlist in Spotify, then refresh the connection. Nothing is created before confirmation.":"Ready to generate a proposal. Nothing is created before confirmation.");
         save=button(body,"Save draft",false,()->{if(save())feedback.setText("Draft saved on this device. No playlist was created.");});
         generate=button(body,"Generate preview",true,this::generate);
+        if(nativeBackend!=null){muted(body,NativeCreator.state());button(body,"Refresh connection",false,()->{feedback.setText(NativeCreator.state());refresh();});button(body,"Check previous creation",false,()->{
+            if(busy)return;busy=true;refresh();final int token=generation;new Thread(()->{try{CreatorSession.Receipt receipt=nativeBackend.verifyPending();post(token,()->feedback.setText("Created "+receipt.name+" · "+receipt.count+" tracks"));}catch(Exception e){post(token,()->feedback.setText(message(e)));}finally{post(token,()->{busy=false;refresh();});}},"spotenhancer-creator-check").start();
+        });button(body,"Clear unfinished request",false,()->{if(busy)return;new AlertDialog.Builder(activity,android.R.style.Theme_Material_Dialog_Alert).setTitle("Checked your Spotify library?").setMessage("An earlier request may already have created a playlist. Clearing this record permits a new creation and can cause duplicates. No playlist is deleted.").setNegativeButton("Cancel",null).setPositiveButton("I checked Spotify",(d,w)->{try{nativeBackend.clearPending();feedback.setText("Recovery record cleared. Existing playlists were not changed.");refresh();}catch(Exception e){feedback.setText(message(e));}}).show();});}
         previewBody=new LinearLayout(activity);previewBody.setOrientation(1);body.addView(previewBody);
         TextWatcher watcher=new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int n,int after){}public void onTextChanged(CharSequence s,int start,int before,int n){invalidate();updateName();}public void afterTextChanged(Editable e){}};
         for(EditText input:fields())input.addTextChangedListener(watcher);
@@ -37,7 +40,7 @@ public final class CreatorPanel {
     private TextView muted(LinearLayout parent,String text){return EnhancerPanel.label(parent,text,12,EnhancerPanel.MUTED,false);}
     private Button button(LinearLayout parent,String title,boolean primary,Runnable action){return EnhancerPanel.button(parent,title,primary,action);}
     private void updateName(){naming.setText("Playlist: SpotEnhancer-"+name.getText().toString().trim());}
-    private void refresh(){boolean on=enabled.isChecked();for(EditText field:fields())field.setEnabled(on&&!busy);save.setEnabled(on&&!busy);generate.setEnabled(on&&!busy&&session!=null);enabled.setEnabled(!busy);}
+    private void refresh(){boolean on=enabled.isChecked();for(EditText field:fields())field.setEnabled(on&&!busy);save.setEnabled(on&&!busy);generate.setEnabled(on&&!busy&&session!=null&&(nativeBackend==null||NativeCreator.ready()));enabled.setEnabled(!busy);}
     private void invalidate(){generation++;preview=null;if(session!=null)session.invalidate();previewBody.removeAllViews();}
     private boolean save(){boolean ok=prefs.edit().putString("creator_name",name.getText().toString()).putString("creator_genres",genres.getText().toString()).putString("creator_artists",artists.getText().toString()).putString("creator_description",description.getText().toString()).putString("creator_count",count.getText().toString()).commit();if(!ok)feedback.setText("Could not save the draft");return ok;}
     private void generate(){

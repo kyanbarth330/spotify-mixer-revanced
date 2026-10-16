@@ -55,6 +55,16 @@ public final class NativeBridge implements MixSession.Backend {
         }
         return new MixSession.Playlist(title,tracks);
     }
+    public static boolean playlistReady(){return playlist!=null;}
+    static byte[] creatorCall(byte[] request)throws Exception{
+        Object service=playlist;if(service==null)throw new IOException("Open a playlist in Spotify first");
+        ClassLoader loader=service.getClass().getClassLoader();Object client=field(service,"f"),context=field(service,"c");Class<?> base=type(loader,"com.spotify.esperanto.esperanto.CoroutineClientBase");Field tf=base.getDeclaredField("transport");tf.setAccessible(true);Object transport=tf.get(client);
+        Class<?> continuation=type(loader,"p.uel");CountDownLatch done=new CountDownLatch(1);AtomicReference<Object> result=new AtomicReference<>();
+        Object callback=Proxy.newProxyInstance(loader,new Class<?>[]{continuation},(proxy,method,args)->{switch(method.getName()){case "getContext":return context;case "resumeWith":result.set(args[0]);done.countDown();return null;case "toString":return "SpotEnhancer create continuation";case "hashCode":return System.identityHashCode(proxy);case "equals":return proxy==args[0];default:throw new UnsupportedOperationException(method.getName());}});
+        Object response=invoke(type(loader,"com.spotify.esperanto.esperanto.CoroutineTransport").getMethod("callSingle",String.class,String.class,byte[].class,continuation),transport,"spotify.playlist_esperanto.proto.RootlistModificationService","Modify",request,callback);
+        if(!(response instanceof byte[])){if(!done.await(30,TimeUnit.SECONDS))throw new IOException("Creation timed out; check Spotify before retrying");response=result.get();}
+        if(!(response instanceof byte[])){invoke(type(loader,"p.yd70").getMethod("M",Object.class),null,response);throw new IOException("Unexpected creation response");}return (byte[])response;
+    }
     public void play(List<String> tracks,boolean shuffle)throws Exception{
         Object service=player;if(service==null)throw new IOException("Play a track in Spotify first");if(tracks.isEmpty())throw new IOException("The mix is empty");
         ClassLoader loader=service.getClass().getClassLoader();Class<?> list=type(loader,"p.l960"),ctx=type(loader,"com.spotify.player.model.Context"),origin=type(loader,"com.spotify.player.model.PlayOrigin"),command=type(loader,"com.spotify.player.model.command.PlayCommand");

@@ -116,7 +116,7 @@ public final class Patcher {
             byte[] patched;
             byte[][] playlist;
             byte[] manifest;
-            log.accept("[PATCH] classes.dex · playlist lifecycle hook");
+            log.accept("[PATCH] classes.dex · playlist lifecycle + search client hooks");
             try (InputStream in = zip.getInputStream(zip.getEntry("classes.dex"))) { playlist = PlaylistHook.patch(read(in)); }
             log.accept("[PATCH] AndroidManifest.xml · private SpotEnhancer Activity");
             try (InputStream in = zip.getInputStream(zip.getEntry("AndroidManifest.xml"))) { manifest = ManifestEditor.addActivity(read(in)); }
@@ -154,7 +154,7 @@ public final class Patcher {
                 }
                 for (int i = 0; i < runtimeDex.size(); i++) {String name="classes"+(18+i)+".dex";put(out,name,runtimeDex.get(i));log.accept("[ADD] "+name+" · SpotEnhancer runtime");}
                 put(out, "classes" + (18+runtimeDex.size()) + ".dex", playlist[1]);
-                log.accept("[ADD] classes"+(18+runtimeDex.size())+".dex · relocated playlist hook");
+                log.accept("[ADD] classes"+(18+runtimeDex.size())+".dex · relocated playlist/search client hooks");
             }
         } catch (Exception e) { log.accept("[ERROR] Patching stopped: "+e.getClass().getSimpleName());unsigned.delete(); throw e; }
     }
