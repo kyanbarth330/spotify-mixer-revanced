@@ -71,7 +71,7 @@ public final class Mixer {
             Field args=base.getDeclaredField("f"),view=base.getDeclaredField("e1");args.setAccessible(true);view.setAccessible(true);
             Bundle bundle=(Bundle)args.get(fragment);View root=(View)view.get(fragment);
             if(root==null || bundle==null){Diagnostics.event("Skipped: "+fragment.getClass().getName()+" view="+(root==null?"null":root.getClass().getName())+" arguments="+(bundle==null?"none":"present"));return;}
-            Diagnostics.event("Fragment "+fragment.getClass().getName()+" root="+root.getClass().getName()+" keys="+bundle.keySet());
+            Diagnostics.event("Fragment "+fragment.getClass().getName()+" root="+root.getClass().getName()+" keys="+new ArrayList<>(bundle.keySet()));
             String uri=PlaylistUri.fromBundle(bundle);
             if(uri==null){
                 contexts.remove(root);
