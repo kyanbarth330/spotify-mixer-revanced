@@ -58,7 +58,7 @@ public class AndroidSmokeTest {
             screenshot("03-multi-playlist-mixer");
             waitText("Save preset").click();UiObject2 name=device.wait(Until.findObject(By.clazz("android.widget.EditText")),3000);assertNotNull(name);name.setText("Morning blend");waitText("Save").click();waitText("Sources");
             assertEquals(1,library.entries(false).size());assertEquals(3,library.entries(false).get(0).config.sources.size());
-            assertFalse(waitText("Load mix").isEnabled());assertFalse(waitText("Start Mix").isEnabled());
+            assertFalse(waitText("Load mix").isEnabled());assertFalse(device.hasObject(By.text("Start Mix")));
             waitText("History").click();waitText("No mixes yet");screenshot("04-empty-history");
             device.findObject(By.desc("Back to SpotEnhancer")).click();waitText("Mix Presets").click();waitText("Morning blend");screenshot("05-saved-presets");
             waitText("Use preset").click();waitText("Playlist Alpha");waitText("Playlist Gamma");
@@ -85,7 +85,7 @@ public class AndroidSmokeTest {
         try(androidx.test.core.app.ActivityScenario<org.example.spotifymixer.runtime.SpotEnhancerActivity> scenario=androidx.test.core.app.ActivityScenario.launch(intent)){
             waitText("Playlist Alpha");scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED);
             library.select(0,"spotify:playlist:0000000000000000000003","Playlist Gamma");library.select(1,"spotify:playlist:0000000000000000000004","Playlist Delta");scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED);
-            waitText("Playlist Gamma");waitText("Playlist Delta");assertFalse(waitText("Start Mix").isEnabled());
+            waitText("Playlist Gamma");waitText("Playlist Delta");assertFalse(device.hasObject(By.text("Start Mix")));
         }
     }
     @Test public void libraryMigrationPresetsHistoryAndCorruption()throws Exception{
