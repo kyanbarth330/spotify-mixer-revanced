@@ -29,7 +29,7 @@ public final class SpotEnhancerActivity extends Activity {
         LinearLayout box=new LinearLayout(this);box.setOrientation(1);box.setBackgroundColor(0xff121212);box.setPadding(24,24,24,24);
         box.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(24+insets.getSystemWindowInsetLeft(),24+insets.getSystemWindowInsetTop(),24+insets.getSystemWindowInsetRight(),24+insets.getSystemWindowInsetBottom());return insets;});
         Button button=new Button(this);button.setText(back);button.setAllCaps(false);button.setOnClickListener(v->action.run());box.addView(button);
-        text(box,heading,30);setContentView(box);box.requestApplyInsets();return box;
+        text(box,heading,30);ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.addView(box,new ScrollView.LayoutParams(-1,-2));setContentView(scroll);box.requestApplyInsets();return box;
     }
     private void home(){mixer=false;LinearLayout box=page("SpotEnhancer","Back to Spotify",()->returnToSpotify());
         text(box,"Make Spotify your own.",16);
