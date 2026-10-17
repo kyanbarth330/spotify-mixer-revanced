@@ -1,5 +1,5 @@
 package org.example.spotifymixer.runtime;
-import android.app.*;import android.content.*;import android.graphics.*;import android.graphics.drawable.*;import android.media.*;import android.media.session.*;import android.os.*;import android.view.*;import android.widget.*;import android.text.*;import android.animation.*;import org.json.*;import java.util.*;import java.util.function.*;import org.example.spotifymixer.ui.*;
+import android.media.session.MediaController;import android.app.*;import android.content.*;import android.graphics.*;import android.graphics.drawable.*;import android.media.*;import android.media.session.*;import android.os.*;import android.view.*;import android.widget.*;import android.text.*;import android.animation.*;import org.json.*;import java.util.*;import java.util.function.*;import org.example.spotifymixer.ui.*;
 /** Real opt-in tool surfaces. Native capability absence is visible, never simulated as success. */
 final class ToolsPanel {
  private final Activity activity;private final LinearLayout body;private final SharedPreferences prefs;private final FeatureCatalog.Feature feature;private final String playlist,title;private final Runnable rebuild,spotify;
