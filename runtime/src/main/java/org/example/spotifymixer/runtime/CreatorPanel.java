@@ -57,7 +57,7 @@ public final class CreatorPanel {
         for(CreatorSession.Track track:shown.tracks){LinearLayout row=EnhancerPanel.card(previewBody);label(row,track.title,14,true);muted(row,track.artist);Button remove=button(row,"Remove track",false,()->{try{preview=session.remove(preview,track.uri);renderPreview();}catch(Exception e){feedback.setText(message(e));}});remove.setContentDescription("Remove "+track.title);remove.setEnabled(shown.tracks.size()>1);}
         button(previewBody,"Create Playlist",true,()->new AlertDialog.Builder(activity,android.R.style.Theme_Material_Dialog_Alert).setTitle("Create playlist?").setMessage(shown.request.playlistName()+" · "+shown.tracks.size()+" tracks").setNegativeButton("Cancel",null).setPositiveButton("Create",(dialog,which)->create(shown)).show());
     }
-    private void create(CreatorSession.Preview confirmed){
+    private void create(CreatorSession.Preview confirmed){if(!Auth.allowed("creator")){feedback.setText("SpotEnhancer Premium is required.");return;}
         if(closed||busy||preview!=confirmed||!enabled.isChecked())return;final int token=generation;busy=true;refresh();previewBody.removeAllViews();feedback.setText("Creating playlist in Spotify…");
         new Thread(()->{try{CreatorSession.Receipt receipt=session.create(confirmed);post(token,()->{preview=null;feedback.setText("Created "+receipt.name+" · "+receipt.count+" tracks");});}catch(Exception e){post(token,()->{preview=null;feedback.setText("Creation could not be confirmed. Check Spotify before retrying. "+message(e));});}finally{post(token,()->{busy=false;refresh();});}},"spotenhancer-creator-write").start();
     }

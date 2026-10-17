@@ -16,7 +16,7 @@ public final class Mixer {
     private static final String ROW="spotenhancer-navigation";
     private static final WeakHashMap<View,java.lang.ref.WeakReference<Object>> contexts=new WeakHashMap<>();
     public static void attach(Activity activity) {
-        Auth.attach(activity);ThemeRuntime.attach(activity);
+        try{Auth.attach(activity);}catch(RuntimeException|LinkageError error){Diagnostics.event("Account initialization unavailable: "+error.getClass().getSimpleName());}ThemeRuntime.attach(activity);
         EqualizerRuntime.attach(activity);
         EnhancementRuntime.attach(activity);
         activity.getWindow().getDecorView().post(() -> {
