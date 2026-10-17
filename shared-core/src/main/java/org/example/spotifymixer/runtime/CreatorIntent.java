@@ -15,8 +15,9 @@ public final class CreatorIntent {
   return Collections.singletonList(value.trim());
  }
  public static List<String> queries(CreatorSession.Request r){
-  boolean naturalGenre=dutchParty(r.genres);String description=naturalGenre?(r.genres+" "+r.description).trim():r.description;
-  List<String> genres=split(naturalGenre?"":r.genres),artists=split(r.artists),terms=terms(description);List<String> out=new ArrayList<>();
+  List<String> genres=split(r.genres),intent=new ArrayList<>();for(String genre:new ArrayList<>(genres))if(dutchParty(genre)){intent.add(genre);genres.remove(genre);}
+  String description=(String.join(" ",intent)+" "+r.description).trim();
+  List<String> artists=split(r.artists),terms=terms(description);List<String> out=new ArrayList<>();
   if(genres.isEmpty())genres.add("");if(artists.isEmpty())artists.add("");
   if(genres.size()*artists.size()>12)throw new IllegalArgumentException("Use at most 12 genre/artist combinations");
   // Interleave expansions across explicit selectors. Keep at least one query for every selector.
