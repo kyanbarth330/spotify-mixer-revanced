@@ -133,9 +133,17 @@ public class AndroidSmokeTest {
     }
     @Test public void themeStudioSavesPresetAndRestoresDefaults()throws Exception{
         android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);prefs.edit().clear().commit();context.startActivity(new Intent(context,FixtureActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
-        try{assertTrue(device.wait(Until.hasObject(By.text("Test library")),15000));device.waitForIdle();waitText("Test library");tools().click();waitText("Theme Studio").click();assertFalse(waitText("Enable themes").isChecked());assertFalse(waitText("Apply theme").isEnabled());waitText("Enable themes").click();UiObject2 spinner=device.wait(Until.findObject(By.desc("Theme preset")),4000);assertNotNull(spinner);spinner.click();waitText("Midnight Ocean").click();waitText("Apply theme").click();assertTrue(prefs.getBoolean("theme_enabled",false));assertEquals("ocean",prefs.getString("theme_preset",""));waitText("Give Spotify a new mood");android.os.SystemClock.sleep(2500);screenshot("13-theme-studio-ocean");
-            waitText("‹  Back to Spotify").click();waitText("Test library");screenshot("14-themed-native-view-fixture");tools().click();waitText("Theme Studio").click();waitText("Restore Spotify defaults").click();assertFalse(prefs.getBoolean("theme_enabled",true));assertFalse(waitText("Enable themes").isChecked());
-        }finally{prefs.edit().remove("theme_enabled").remove("theme_preset").commit();org.example.spotifymixer.runtime.ThemeRuntime.refresh(context);device.pressHome();}
+        try{
+            waitText("Test library");tools().click();waitText("Theme Studio").click();
+            UiObject2 enabled=device.wait(Until.findObject(By.desc("Enable themes")),4000);assertNotNull(enabled);assertFalse(enabled.isChecked());assertFalse(waitText("Apply").isEnabled());enabled.click();
+            UiObject2 ocean=device.wait(Until.findObject(By.desc("Preview Midnight Ocean")),4000);assertNotNull(ocean);ocean.click();
+            assertFalse("Preview must not save a palette",prefs.contains("theme_preset"));waitText("Apply").click();awaitSetting(prefs,"theme_preset","ocean");assertTrue(prefs.getBoolean("theme_enabled",false));
+            screenshot("13-theme-studio-library");waitText("Settings").click();waitText("Appearance");screenshot("14-theme-studio-settings");
+            UiObject2 black=device.wait(Until.findObject(By.desc("True black")),4000);assertNotNull(black);black.click();assertFalse("True black is staged",prefs.getBoolean("amoled_enabled",false));waitText("Apply").click();awaitSetting(prefs,"amoled_enabled",true);
+            waitText("Restore defaults").click();waitText("Restore").click();awaitSetting(prefs,"theme_enabled",false);assertFalse(prefs.getBoolean("amoled_enabled",true));assertFalse(prefs.contains("theme_preset"));
+            assertFalse(device.wait(Until.findObject(By.desc("Enable themes")),4000).isChecked());
+            device.wait(Until.findObject(By.desc("Back to SpotEnhancer")),4000).click();waitText("‹  Back to Spotify").click();waitText("Test library");
+        }finally{prefs.edit().remove("theme_enabled").remove("theme_preset").remove("amoled_enabled").commit();org.example.spotifymixer.runtime.ThemeRuntime.refresh(context);device.pressHome();}
     }
     @Test public void themesMapAndRestoreOwnViewsWithoutTintingArtwork(){
         android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);prefs.edit().clear().commit();

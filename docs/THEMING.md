@@ -1,6 +1,14 @@
-# Theme Studio — 0.15
+# Theme Studio — 0.20
 
-Five original palettes: AMOLED Green, Midnight Ocean, Velvet Purple, Rose Gold and Arctic Mint. Feature defaults off. Choices/settings commit before success. Previewing a preset does not apply it; Apply stores it. Disabling/Restore defaults turns off native conversion and restores tracked view properties, retaining other settings. Reopen screen recreates Spotify MainActivity, not the player service. It never clears data or force-kills the process. Cached screens may require manually restarting Spotify for a full refresh.
+The original five saved palette IDs remain compatible: AMOLED Green, Midnight Ocean, Velvet Purple, Rose Gold and Arctic Mint. The catalog now has 24 dark palettes grouped into AMOLED, Cool, Warm and Neon.
+
+The dedicated full-height Studio matches the approved concept: Themes / Settings tabs, searchable two-column preview cards (one column on narrow/large-text configurations), favorites, Active/Preview markers and a fixed Apply footer. All UI text is English. Each preview uses original procedural artwork and illustrative player controls; it does not play music or download artwork. Preview surfaces opt out of global view recoloring so the selected theme cannot corrupt other palettes' colors.
+
+Settings shows the selected palette, five semantic swatches, staged True black (the existing `amoled_enabled` setting), Refresh screen and confirmed Restore defaults. Main Enable themes changes the effect immediately; turning it off also disables the AMOLED override. Choosing a palette or staging True black never writes either value before Apply. Apply checks Premium again and commits the palette and black setting together. Restore disables both features, removes the saved preset, and keeps favorites and unrelated preferences. Search, filters, selection, tab, True black draft and scroll position survive Activity recreation. Account refresh preserves an open draft while entitled; losing entitlement closes the editor through the existing locked-feature route.
+
+New palettes: Solar Amber, Obsidian, Graphite, Glacier Blue, Lavender Haze, Cherry Blossom, Copper Glow, Aurora, Cyber Pink, Electric Lime, Sakura Night, Indigo Dreams, Forest Drive, Emerald City, Desert Sand, Ruby Noir, Cobalt Sky, Ultraviolet and Silver Screen.
+
+Feature defaults off. Choices/settings commit before success. Previewing a preset does not apply it; Apply stores it. Disabling/Restore defaults turns off native conversion and restores tracked view properties, retaining other settings. Reopen screen recreates Spotify MainActivity, not the player service. It never clears data or force-kills the process. Cached screens may require manually restarting Spotify for a full refresh.
 
 ## Native integration and limits
 

@@ -26,6 +26,8 @@ public final class ThemeRuntime {
   public void onGlobalLayout(){if(palette!=null)request(false);}
   void request(boolean immediate){if(closed)return;if(immediate){handler.removeCallbacks(this);queued=false;run();}else if(!queued){queued=true;handler.postDelayed(this,Math.max(0,250-(SystemClock.uptimeMillis()-last)));}}
   public void run(){queued=false;if(closed)return;View r=root.get();Activity a=activity.get();if(r==null||a==null||a.isDestroyed())return;last=SystemClock.uptimeMillis();
+   // Studio owns its preview colors; global theming must not recolor other palettes.
+   if(r.findViewWithTag(ThemeStudio.ROOT_TAG)!=null){restore();return;}
    ThemePalette p=palette;if(p==null){restore();a.getWindow().setStatusBarColor(status);a.getWindow().setNavigationBarColor(navigation);r.setSystemUiVisibility(flags);return;}
    a.getWindow().setStatusBarColor(p.background);a.getWindow().setNavigationBarColor(p.background);r.setSystemUiVisibility(r.getSystemUiVisibility()&~(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR));
    ArrayDeque<View> todo=new ArrayDeque<>();todo.add(r);int n=0;while(!todo.isEmpty()&&n++<2000){View v=todo.remove();style(v);v.invalidate();if(v instanceof ViewGroup){ViewGroup group=(ViewGroup)v;for(int i=0;i<group.getChildCount();i++)todo.add(group.getChildAt(i));}}

@@ -291,3 +291,18 @@ Own PHP/MySQL service and Android server-verified tier UI are implemented; no li
 - Intermediate Android run 39024353809 failed before tests because Maven dependencies (dexlib2 and annotation artifacts) could not be resolved. That is failed CI, not passing evidence; the final complete run above resolves dependencies and passes.
 
 The Android membership states are set through reflection in androidTest-only code; no production bypass is shipped. Backend and Android tests are separate, not a live TLS login/client/server integration test. Live domain installation/configuration, actual Spotify metadata/artwork delivery and real device Spotify startup/login/audio still require owner/device confirmation. The server README gives the exact public-root/config/schema/administrator steps. PR #1 remains draft; no merge or live deployment was performed.
+
+
+## 0.20 Theme Studio redesign
+
+Local implementation based on the approved two-screen concept. All new UI text is English. Catalog expands from 5 to 24 palettes while retaining the original IDs; adds search/category filters, local favorites, illustrative visual cards, Settings, semantic swatches, staged True black, fixed Apply and confirmed reset. Studio previews are excluded from the global traditional-view recoloring pass. Account refresh retains the draft while Premium remains valid; activity recreation restores the draft without applying it.
+
+Validated locally on Java 17 / Gradle 8.10.2 / Android SDK 35:
+- 86 engine/core tests, zero failures, including the full palette contrast/mapping suite and catalog/search/category regression.
+- 10 runtime unit tests, zero failures.
+- Debug installer, runtime, testhost and Android instrumentation-test APKs compile and assemble.
+- Final installer asset check passes; the actual patcher accepts the delivered 4-DEX runtime with 328 unique classes.
+- Installer APK signature verification passes.
+- Two parser tests pass; `git diff --check` is clean.
+
+Android UI regressions were updated/added for preview-versus-apply, True black staging, restore, favorites persistence, recreation, search/filter empty state and Premium denial. They have compiled but have NOT run here: no local Android emulator/KVM is available. Actual screen rendering and the visual match to the concept remain pending emulator/device review. No new proprietary Spotify APK patch/sign/on-device test is claimed. GitHub push was blocked by automatic approval review; remote build/emulator workflows have not been started for these changes.
