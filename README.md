@@ -1,5 +1,11 @@
 # SpotEnhancer
 
+## Version 0.20 — redesigned Theme Studio
+
+[Download installer 0.20](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39030817202/artifacts/12100057422). [Installer build](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39030817202) and [Android 35 screen tests](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39033049460) pass: 96 local unit tests, 31 executed Android tests and separate process-stop persistence checks. English Velvet Purple library/Settings screenshots were visually reviewed.
+
+Theme Studio now follows the approved two-tab design, entirely in English: 24 visual theme cards, search, AMOLED/Cool/Warm/Neon filters, local favorites, an illustrative player preview and a fixed Apply bar. Settings offers semantic color swatches, staged True black, screen refresh and confirmed Restore defaults. Theme selection and True black only persist on Apply; Enable themes switches the effect immediately. Drafts survive Activity recreation, and the existing five saved palette IDs remain compatible. Premium verification and the account API are unchanged. See [Theme Studio](docs/THEMING.md) for scope and validation.
+
 ## Version 0.19 — accounts and playlist metadata
 
 Adds an English account screen and server-verified Free/Premium locks: 6 of 32 product tools are Free, 26 Premium. The own PHP/MySQL backend targets `https://spotenhancer.sourcemod.lol` and **must be installed/configured by the owner**; it is not deployed by committing this code. Until the service is available and verifies an upgraded account, Premium tools stay locked. No checkout or Spotify Premium rights are provided. See [server installation](server/README.md).

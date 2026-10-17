@@ -291,3 +291,26 @@ Own PHP/MySQL service and Android server-verified tier UI are implemented; no li
 - Intermediate Android run 39024353809 failed before tests because Maven dependencies (dexlib2 and annotation artifacts) could not be resolved. That is failed CI, not passing evidence; the final complete run above resolves dependencies and passes.
 
 The Android membership states are set through reflection in androidTest-only code; no production bypass is shipped. Backend and Android tests are separate, not a live TLS login/client/server integration test. Live domain installation/configuration, actual Spotify metadata/artwork delivery and real device Spotify startup/login/audio still require owner/device confirmation. The server README gives the exact public-root/config/schema/administrator steps. PR #1 remains draft; no merge or live deployment was performed.
+
+
+## 0.20 Theme Studio redesign
+
+Local implementation based on the approved two-screen concept. All new UI text is English. Catalog expands from 5 to 24 palettes while retaining the original IDs; adds search/category filters, local favorites, illustrative visual cards, Settings, semantic swatches, staged True black, fixed Apply and confirmed reset. Studio previews are excluded from the global traditional-view recoloring pass. Account refresh retains the draft while Premium remains valid; activity recreation restores the draft without applying it.
+
+Validated locally on Java 17 / Gradle 8.10.2 / Android SDK 35:
+- 86 engine/core tests, zero failures, including the full palette contrast/mapping suite and catalog/search/category regression.
+- 10 runtime unit tests, zero failures.
+- Debug installer, runtime, testhost and Android instrumentation-test APKs compile and assemble.
+- Final installer asset check passes; the actual patcher accepts the delivered 4-DEX runtime with 328 unique classes.
+- Installer APK signature verification passes.
+- Two parser tests pass; `git diff --check` is clean.
+
+Android UI regressions cover preview-versus-apply, True black staging, restore, favorites persistence, recreation, search/filter empty state and Premium denial.
+
+[Cloud installer build 39030817202](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39030817202) passes. [Installer artifact 12100057422](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39030817202/artifacts/12100057422) was downloaded; archive SHA-256 matches the artifact digest, its signature verifies, and the actual patcher accepts its 4-DEX / 328-class runtime. App-source commit: 3a72e82ceb33f2d945bdf1a542f8ac0cacd30546.
+
+Initial own Android35 run 39030817173 failed two test methods. One missed the platform dialog's transformed Restore label and its cleanup then touched views from the instrumentation thread; the other did not scroll to Restore defaults. The fixes in 9dcb007e60e3a6e435147792d693399e8e8f570c only change test scrolling, dialog-ID selection, main-thread cleanup and screenshot capture; application code is unchanged. This failed run is not passing device evidence. Its English library/settings screenshots were inspected. The second run 39031612128 passed the original theme smoke test but exposed a missing wait for the positive dialog callback in the new recreation test. d6a1224ce8df2321083157068346780e6969d02a waits for persisted values and the actual visible Settings page, rather than treating accessibility idle as completion.
+
+Run 39032304253 passes all Theme Studio methods; its English Velvet Purple library and Settings screenshots were downloaded and visually reviewed. One pre-existing account test failed to locate the volume input while the emulator's system volume dialog remained above the app. b16ac2e363dc73c55af478fbe3e00795ebbf857e starts account tests from Home to dismiss that transient system window and gives cold-start controls a bounded wait. All these commits change test code only. The final full rerun [39033049460](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39033049460) **passes**. Downloaded XML reports 32 tests, zero failures/errors and one intentional phase-only skip: 31 executed tests in 280.880 seconds. All five theme-related methods pass, including preview/apply/restore, native color mapping with untouched artwork, synthetic native-hook execution, favorites/search/recreation and Premium denial. Separate process-stop persistence write/read logs each report `OK (1 test)`. [Final evidence artifact 12101163236](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39033049460/artifacts/12101163236) was downloaded; XML, both phase logs and the English Velvet Purple library/Settings screenshots were inspected. Final test source: b16ac2e363dc73c55af478fbe3e00795ebbf857e. Application source and installer payload are unchanged from the passing installer build.
+
+No new proprietary Spotify APK patch/sign/on-device test is claimed. Own Android fixtures do not establish live Spotify color coverage or playback.

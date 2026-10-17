@@ -4,24 +4,25 @@ import android.app.*;import android.content.*;import android.os.*;import android
 
 /** In-app translucent tools panel. No system overlay permission and no external selection route. */
 public final class SpotEnhancerActivity extends Activity {
-    private ToolsPanel toolsPanel;private CreatorPanel creatorPanel;private SharedPreferences prefs;private MixLibrary library;private MixConfig draft;private String contextUri,contextTitle,screen="home",shown,category="All",query="",presetName="Custom mix";
+    private ToolsPanel toolsPanel;private CreatorPanel creatorPanel;private ThemeStudio themeStudio;private Bundle themeState;private SharedPreferences prefs;private MixLibrary library;private MixConfig draft;private String contextUri,contextTitle,screen="home",shown,category="All",query="",presetName="Custom mix";
     private final MixSession session=new MixSession(new NativeBridge());private MixSession.Prepared prepared;private int generation;private boolean busy;
     private final Runnable accountChanged=this::accountChanged;private Button load,start;private TextView status;private final List<View> controls=new ArrayList<>();
     public void onCreate(Bundle state){
         setTheme(android.R.style.Theme_Translucent_NoTitleBar);super.onCreate(state);Auth.attach(this);ThemeRuntime.attach(this);EqualizerRuntime.attach(this);EnhancementRuntime.attach(this);getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN|WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);prefs=getSharedPreferences(Mixer.PREFS,0);library=new MixLibrary(prefs);
-        contextUri=PlaylistUri.normalize(getIntent().getStringExtra("playlist"));contextTitle=getIntent().getStringExtra("title");
+        themeState=state;contextUri=PlaylistUri.normalize(getIntent().getStringExtra("playlist"));contextTitle=getIntent().getStringExtra("title");
         if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(0,this::back);
         String route=state==null?getIntent().getStringExtra("screen"):state.getString("screen");
         try{draft=library.active();}catch(Exception e){failure(e);draft=new MixConfig(Collections.emptyList(),false);}
         if(route!=null&&route.startsWith("tool:"))tool(route.substring(5));else if("mixer".equals(route))mixer();else if("creator".equals(route))creator();else if("themes".equals(route))themes();else if("equalizer".equals(route))equalizer();else if("account".equals(route))account();else home();
         Auth.listen(accountChanged);
     }
-    protected void onSaveInstanceState(Bundle out){out.putString("screen",screen);super.onSaveInstanceState(out);}
+    protected void onSaveInstanceState(Bundle out){out.putString("screen",screen);if(themeStudio!=null)themeStudio.saveState(out);super.onSaveInstanceState(out);}
     protected void onResume(){super.onResume();if(library!=null&&shown!=null&&!shown.equals(library.signature())){try{draft=library.active();if("mixer".equals(screen))mixer();}catch(Exception e){failure(e);}}}
-    protected void onDestroy(){Auth.unlisten(accountChanged);if(toolsPanel!=null)toolsPanel.close();if(creatorPanel!=null)creatorPanel.close();session.invalidate();super.onDestroy();}
+    protected void onDestroy(){Auth.unlisten(accountChanged);if(themeStudio!=null)themeStudio.close();if(toolsPanel!=null)toolsPanel.close();if(creatorPanel!=null)creatorPanel.close();session.invalidate();super.onDestroy();}
     public void onBackPressed(){back();}
     private void back(){if(!screen.equals("home"))home();else returnToSpotify();}
-    private LinearLayout page(String title,String route){if(toolsPanel!=null){toolsPanel.close();toolsPanel=null;}if(creatorPanel!=null){creatorPanel.close();creatorPanel=null;}generation++;session.invalidate();prepared=null;busy=false;screen=route;controls.clear();shown=library.signature();return EnhancerPanel.page(this,title,route.equals("home"),this::home,this::returnToSpotify);}
+    private void preparePage(String route){if(themeStudio!=null){themeStudio.close();themeStudio=null;}if(toolsPanel!=null){toolsPanel.close();toolsPanel=null;}if(creatorPanel!=null){creatorPanel.close();creatorPanel=null;}generation++;session.invalidate();prepared=null;busy=false;screen=route;controls.clear();shown=library.signature();}
+    private LinearLayout page(String title,String route){preparePage(route);return EnhancerPanel.page(this,title,route.equals("home"),this::home,this::returnToSpotify);}
     private TextView text(LinearLayout parent,String value,int size,boolean bold){return EnhancerPanel.label(parent,value,size,EnhancerPanel.WHITE,bold);}
     private TextView muted(LinearLayout parent,String value){return EnhancerPanel.label(parent,value,12,EnhancerPanel.MUTED,false);}
     private Button button(LinearLayout parent,String title,boolean primary,Runnable action){return EnhancerPanel.button(parent,title,primary,action);}
@@ -48,7 +49,7 @@ public final class SpotEnhancerActivity extends Activity {
     private boolean locked(String id,String title){if(Auth.allowed(id))return false;LinearLayout body=page(title,"locked:"+id);AccountPanel.locked(this,body,title);return true;}
     private void playlistCover(ImageView view,String cover,int token){if(cover==null||cover.isEmpty()){view.setContentDescription("Playlist cover unavailable");return;}PlaylistMetadataStore.image(cover,bitmap->onMixer(token,()->{if(bitmap!=null){view.setImageBitmap(bitmap);view.setContentDescription("Playlist cover");}else view.setContentDescription("Playlist cover unavailable");}));}
     private void account(){AccountPanel.render(this,page("Account","account"));}
-    private void accountChanged(){if(isFinishing()||isDestroyed())return;String current=screen;if(current.equals("account"))account();else if(current.equals("home"))home();else if(current.startsWith("tool:"))tool(current.substring(5));else if(current.equals("equalizer"))equalizer();else if(current.equals("themes"))themes();else if(current.equals("creator"))creator();else if(current.equals("history"))collection(true);else if(current.equals("presets"))collection(false);else if(current.startsWith("locked:"))home();}
+    private void accountChanged(){if(isFinishing()||isDestroyed())return;String current=screen;if(current.equals("account"))account();else if(current.equals("home"))home();else if(current.startsWith("tool:"))tool(current.substring(5));else if(current.equals("equalizer"))equalizer();else if(current.equals("themes")){if(themeStudio!=null&&Auth.allowed("themes"))themeStudio.refreshAccess();else themes();}else if(current.equals("creator"))creator();else if(current.equals("history"))collection(true);else if(current.equals("presets"))collection(false);else if(current.startsWith("locked:"))home();}
     private int dp(int n){return EnhancerPanel.dp(this,n);}
     private void mixer(){
         final LinearLayout body=page("Playlist Mixer","mixer");final int token=generation;
@@ -122,18 +123,11 @@ public final class SpotEnhancerActivity extends Activity {
         button(body,"Reset to Flat",false,()->{if(!prefs.edit().putInt("eq_preset",0).commit()){failure(new Exception("Could not reset equalizer"));return;}EqualizerRuntime.refresh();equalizer();});
         muted(body,"Settings are saved on this device. Disable to release the effect. Use one equalizer at a time; boosted bands can distort loud recordings. Device/offload support varies.");
     }
-    private void themes(){if(locked("themes","Theme Studio"))return;
-        LinearLayout body=page("Theme Studio","themes");text(body,"Give Spotify a new mood",25,true);muted(body,"Global color presets for supported native screens and SpotEnhancer. Artwork, video, layout and fonts stay original.");
-        Switch enabled=new Switch(new android.view.ContextThemeWrapper(this,android.R.style.Theme_Material_NoActionBar));enabled.setText("Enable themes");enabled.setTextColor(EnhancerPanel.WHITE);EnhancerPanel.styleSwitch(enabled);enabled.setChecked(Auth.enabled(prefs,"themes"));body.addView(enabled);
-        String stored=prefs.getString("theme_preset","amoled");Spinner choices=new Spinner(new android.view.ContextThemeWrapper(this,android.R.style.Theme_Material_NoActionBar));String[] labels=ThemePalette.PRESETS.stream().map(p->p.name).toArray(String[]::new);choices.setAdapter(new ArrayAdapter<String>(choices.getContext(),android.R.layout.simple_spinner_dropdown_item,labels));choices.setContentDescription("Theme preset");int selected=0;for(int i=0;i<ThemePalette.PRESETS.size();i++)if(ThemePalette.PRESETS.get(i).id.equals(stored))selected=i;choices.setSelection(selected);body.addView(choices,new LinearLayout.LayoutParams(-1,dp(52)));
-        LinearLayout preview=EnhancerPanel.card(body);TextView sample=text(preview,"Your music, reimagined",22,true);TextView sub=muted(preview,"Playlist · Artist · Now Playing");Button play=button(preview,"Preview accent",true,()->{});play.setClickable(false);play.setFocusable(false);
-        Runnable render=()->{ThemePalette p=ThemePalette.PRESETS.get(choices.getSelectedItemPosition());preview.setBackground(EnhancerPanel.surface(p.surface,16,this,false));sample.setTextColor(p.text);sub.setTextColor(p.muted);play.setBackground(EnhancerPanel.surface(p.accent,24,this,false));play.setTextColor(0xff07150c);};
-        choices.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){public void onNothingSelected(android.widget.AdapterView<?> parent){}public void onItemSelected(android.widget.AdapterView<?> parent,View view,int position,long id){render.run();}});render.run();
-        Button apply=button(body,"Apply theme",true,()->{ThemePalette p=ThemePalette.PRESETS.get(choices.getSelectedItemPosition());if(!prefs.edit().putString("theme_preset",p.id).putBoolean("theme_enabled",true).commit()){failure(new Exception("Could not save theme"));return;}ThemeRuntime.refresh(this);themes();Toast.makeText(this,p.name+" applied",Toast.LENGTH_SHORT).show();});apply.setEnabled(enabled.isChecked());
-        enabled.setOnCheckedChangeListener((view,value)->{if(!prefs.edit().putBoolean("theme_enabled",value).commit()){failure(new Exception("Could not save theme setting"));themes();return;}ThemeRuntime.refresh(this);themes();});
-        button(body,"Reopen Spotify screen",false,()->ThemeRuntime.reopen(this));
-        button(body,"Restore Spotify defaults",false,()->{if(!prefs.edit().putBoolean("theme_enabled",false).remove("theme_preset").commit()){failure(new Exception("Could not restore defaults"));return;}ThemeRuntime.refresh(this);themes();});
-        muted(body,"Presets are saved on this device. Reopen the Spotify screen to refresh cached colors; restart Spotify if an old screen keeps its colors. Disabling restores tracked view colors and native conversion. Some stateful controls, custom canvases, gradients and dialogs may keep their original styling.");
+    private void themes(){
+        if(locked("themes","Theme Studio"))return;
+        preparePage("themes");
+        themeStudio=new ThemeStudio(this,prefs,this::home,themeState);
+        themeState=null;
     }
     private void tool(String id){FeatureCatalog.Feature f=FeatureCatalog.find(id);LinearLayout body=page(f.title,"tool:"+id);toolsPanel=new ToolsPanel(this,body,prefs,id,contextUri,contextTitle,()->tool(id),this::returnToSpotify);}
     private void creator(){if(locked("creator","Playlist Creator"))return;LinearLayout body=page("Playlist Creator","creator");creatorPanel=new CreatorPanel(this,body,prefs,new NativeCreator(prefs));}
