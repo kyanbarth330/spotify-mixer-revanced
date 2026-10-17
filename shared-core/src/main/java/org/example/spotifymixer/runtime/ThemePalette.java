@@ -11,6 +11,7 @@ public final class ThemePalette {
   new ThemePalette("rose","Rose Gold",0xff1b1014,0xff2e1c24,0xff53333e,0xfffff1e8,0xffd4b8b0,0xffffb18d),
   new ThemePalette("mint","Arctic Mint",0xff071815,0xff102c27,0xff29554a,0xffeafff6,0xffa9cec0,0xff61f0bd)));
  public static ThemePalette find(String id){for(ThemePalette p:PRESETS)if(p.id.equals(id))return p;return PRESETS.get(0);}
+ public ThemePalette black(){return new ThemePalette(id,name,0xff000000,surface,line,text,muted,accent);}
  public int map(int color){
   int alpha=color&0xff000000,rgb=color&0xffffff;if(alpha==0)return color;
   // An already themed color must not drift when it passes multiple UI conversion layers.

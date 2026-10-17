@@ -18,6 +18,7 @@ public final class Mixer {
     public static void attach(Activity activity) {
         ThemeRuntime.attach(activity);
         EqualizerRuntime.attach(activity);
+        EnhancementRuntime.attach(activity);
         activity.getWindow().getDecorView().post(() -> {
             try {
                 FrameLayout host=activity.findViewById(android.R.id.content);

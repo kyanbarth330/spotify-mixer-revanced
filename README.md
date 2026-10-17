@@ -6,6 +6,10 @@ An independent local Android installer for the exact user-supplied Spotify 9.1.9
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
 
+## Version 0.17 — enhancements (validation in progress)
+
+The wrench panel adds 21 individually optional tools/tweaks, including Sleep Timer, Cinema Player/Live Artwork, playlist duplicate/membership scans, observed-history Rediscover, AMOLED/Android-view density, published Queue Search/snapshots, a confirmed revision-bound native queue-clear action, Clean Share, volume/headphone rules, guarded tool replacements, Quick Search, seek/skip tools, Start Page and Settings Profiles. [Exact feature scope and limits](docs/ENHANCEMENTS.md). No URL entry or external share route. Several native/global behaviors remain explicitly limited; no complete Spotify queue/library/history coverage is claimed. The download above remains the previous validated 0.16 until the new checks complete.
+
 ## Version 0.16 — Equalizer
 
 Green wrench -> Equalizer: default-off switch, Flat / Bass Boost / Vocal / Treble Boost / Warm presets and manual bands supplied by Android. Saved controls apply to local Spotify audio sessions; remote Connect devices are unaffected. Start or pause/resume a track and Refresh connection if waiting. No global audio session, recording, extra proprietary hook or automatic playback. [Scope and testing](docs/EQUALIZER.md). [Installer build](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38983051463) and private exact-input patch/sign/inventory checks pass. [Own Android35 tests](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38983771883/artifacts/12082462688) pass (15 executed, plus process-stop persistence). Live Spotify audio remains unverified.

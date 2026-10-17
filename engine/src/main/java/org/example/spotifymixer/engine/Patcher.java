@@ -118,6 +118,8 @@ public final class Patcher {
             byte[] manifest;
             log.accept("[PATCH] classes.dex · playlist lifecycle + search client hooks");
             try (InputStream in = zip.getInputStream(zip.getEntry("classes.dex"))) { playlist = PlaylistHook.patch(read(in)); }
+            log.accept("[PATCH] classes.dex · media session capture (relocated wrapper)");
+            byte[][] media=MediaHook.patch(playlist[0]);playlist[0]=media[0];playlist[1]=ThemeHook.merge(playlist[1],media[1]);
             log.accept("[PATCH] classes4.dex · native Compose color conversion");
             try(InputStream in=zip.getInputStream(zip.getEntry("classes4.dex"))){themed=ThemeHook.patch(read(in));}
             playlist[1]=ThemeHook.merge(playlist[1],themed[1]);

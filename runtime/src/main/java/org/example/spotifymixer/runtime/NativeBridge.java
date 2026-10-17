@@ -6,6 +6,7 @@ public final class NativeBridge implements MixSession.Backend {
     private static volatile Object playlist,player;
     public static void capturePlaylist(Object service){playlist=service;Diagnostics.event("Native playlist service captured");}
     public static void capturePlayer(Object service){player=service;Diagnostics.event("Native player service captured");}
+    static Object playerService(){return player;}
     public static boolean ready(){return playlist!=null&&player!=null;}
     public static String state(){return "Playlist service: "+(playlist==null?"waiting":"ready")+" · Player service: "+(player==null?"waiting":"ready");}
     private static Object field(Object o,String name)throws Exception{Field f=o.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(o);}

@@ -1,0 +1,9 @@
+package org.example.spotifymixer.runtime;
+import org.junit.Test;import static org.junit.Assert.*;import java.util.*;
+public class EnhancementToolsTest {
+ private final String track="spotify:track:0000000000000000000001";
+ @Test public void canonicalLinksExcludeTrackingAndRejectOtherHosts(){assertEquals("https://open.spotify.com/track/0000000000000000000001",EnhancementTools.cleanLink(track));assertEquals(track,EnhancementTools.track("https://open.spotify.com/track/0000000000000000000001?si=tracking"));assertNull(EnhancementTools.track("https://evil.example/track/0000000000000000000001"));assertEquals("https://open.spotify.com/playlist/0000000000000000000002",EnhancementTools.cleanLink("spotify:playlist:0000000000000000000002"));}
+ @Test public void duplicatesCountCanonicalIdsWithoutMergingOtherRecordings(){Map<String,Integer> result=EnhancementTools.duplicates(Arrays.asList(track,track,"spotify:track:0000000000000000000002","bad"));assertEquals(1,result.size());assertEquals(Integer.valueOf(2),result.get(track));}
+ @Test public void seeksAccountForRunningClockAndDuration(){assertEquals(16000,EnhancementTools.seek(5000,1000,2000,1,true,20000,10000));assertEquals(20000,EnhancementTools.seek(5000,1000,2000,1,true,20000,30000));assertEquals(0,EnhancementTools.seek(5000,1000,2000,1,false,20000,-30000));assertEquals(15000,EnhancementTools.seek(5000,1000,9999,1,false,20000,10000));}
+ @Test public void volumeClampsAndSkipNeedsSameDirectionTwice(){assertEquals(15,EnhancementTools.volume(14,15,1,3));assertEquals(0,EnhancementTools.volume(1,15,-1,3));EnhancementTools.SkipGuard guard=new EnhancementTools.SkipGuard();assertFalse(guard.allow(0,1,true));assertTrue(guard.allow(100,1,true));assertFalse(guard.allow(200,1,true));assertFalse(guard.allow(300,-1,true));assertTrue(guard.allow(400,-1,true));assertTrue(guard.allow(500,1,false));assertFalse(guard.allow(5000,1,true));}
+}
