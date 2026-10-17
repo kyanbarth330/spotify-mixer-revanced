@@ -14,6 +14,9 @@ public class AccountAndMetadataTest {
   open("creator");text("Open account").click();text("Your SpotEnhancer account");text("Sign in");assertNotNull(device.findObject(By.desc("SpotEnhancer Username")));shot("25-free-account-lock-own-fixture");
   OwnMembership.set(true);assertTrue(Auth.allowed("creator"));OwnMembership.set(false);assertFalse(Auth.allowed("creator"));
  }
+ @Test public void stalePremiumControlsCannotSaveAfterExpiry()throws Exception{
+  OwnMembership.set(true);prefs.edit().putBoolean("volume_enabled",true).commit();open("tool:volume");UiObject2 input=device.wait(Until.findObject(By.desc("Volume steps (1–10)")),5000);assertNotNull(input);input.setText("8");OwnMembership.set(false);text("Save volume steps").click();InstrumentationRegistry.getInstrumentation().waitForIdleSync();assertFalse(prefs.contains("volume_steps"));assertFalse(Auth.enabled(prefs,"volume"));
+ }
  @Test public void tokenEncryptionUsesKeystoreWithoutPlaintextPersistence()throws Exception{
   java.lang.reflect.Method encrypt=Auth.class.getDeclaredMethod("encrypt",String.class),decrypt=Auth.class.getDeclaredMethod("decrypt",String.class);encrypt.setAccessible(true);decrypt.setAccessible(true);String token="a".repeat(64);String encoded=(String)encrypt.invoke(null,token);assertFalse(encoded.contains(token));assertEquals(token,decrypt.invoke(null,encoded));assertNull(context.getSharedPreferences("spotenhancer-account-secure-v1",0).getString("session",null));
  }

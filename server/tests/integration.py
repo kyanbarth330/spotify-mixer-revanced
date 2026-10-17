@@ -28,6 +28,7 @@ class AccountAPI(unittest.TestCase):
   status,result=self.call('login',{'username':'OWN_FIXTURE','password':password});self.assertEqual(200,status);second=result['token']
   self.assertEqual(200,self.call('logout',token=token)[0]);self.assertEqual(401,self.call('session',token=token)[0]);self.assertEqual(200,self.call('session',token=second)[0])
   status,result=self.call('change-password',{'password':password,'new_password':'New fixture password 2026!'},second);self.assertEqual(200,status);third=result['token'];self.assertEqual(401,self.call('session',token=second)[0]);self.assertEqual(200,self.call('logout-all',token=third)[0]);self.assertEqual(401,self.call('session',token=third)[0])
+  status,result=self.call('login',{'username':'own_fixture','password':'New fixture password 2026!'});self.assertEqual(200,status);expired=result['token'];self.sql('UPDATE sessions SET expires_at=1');self.assertEqual(401,self.call('session',token=expired)[0])
   self.assertEqual(404,self.call('upgrade',{'plan':'premium'})[0]);self.assertEqual(401,self.call('session',token="x'*64")[0])
   for _ in range(15):last=self.call('login',{'username':'unknown_fixture','password':password})[0]
   self.assertEqual(429,last);self.admin('cleanup')
