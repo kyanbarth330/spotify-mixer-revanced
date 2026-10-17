@@ -14,7 +14,7 @@ public final class EnhancementRuntime {
   }catch(RuntimeException error){Diagnostics.event("Enhancement attach unavailable: "+error.getClass().getSimpleName());}
  }
  private static void bind(Activity a){
-  if(!windows.containsKey(a)){Window w=a.getWindow();Window.Callback original=w.getCallback();if(original!=null){WeakReference<Activity> weak=new WeakReference<>(a);Window.Callback proxy=(Window.Callback)Proxy.newProxyInstance(Window.Callback.class.getClassLoader(),new Class<?>[]{Window.Callback.class},(self,method,args)->{
+  if(!windows.containsKey(a)||windows.get(a).get()!=a.getWindow().getCallback()){Window w=a.getWindow();Window.Callback original=w.getCallback();if(original!=null){WeakReference<Activity> weak=new WeakReference<>(a);Window.Callback proxy=(Window.Callback)Proxy.newProxyInstance(Window.Callback.class.getClassLoader(),new Class<?>[]{Window.Callback.class},(self,method,args)->{
     if(method.getName().equals("dispatchKeyEvent")&&args!=null&&args[0] instanceof KeyEvent){Activity host=weak.get();if(host!=null&&key(host,(KeyEvent)args[0]))return true;}
     try{return method.invoke(original,args);}catch(InvocationTargetException e){throw e.getCause();}
    });windows.put(a,new WeakReference<>(proxy));w.setCallback(proxy);}}
