@@ -6,6 +6,7 @@ public final class MediaToolsRuntime {
  private static Context app;private static SharedPreferences prefs;
  private static final ArrayList<MediaSession> pending=new ArrayList<>();
  private static final LinkedHashMap<MediaSession.Token,MediaController> controllers=new LinkedHashMap<>();
+ private static volatile List<MediaController> published=Collections.emptyList();
  private static final Map<MediaSession.Token,MediaController.Callback> callbacks=new HashMap<>();
  private static final EnhancementTools.SkipGuard skipGuard=new EnhancementTools.SkipGuard();
  private static String lastTrack,notice="Waiting for a Spotify media session";
@@ -16,10 +17,10 @@ public final class MediaToolsRuntime {
  private static void connect(MediaSession session){MediaController c=session.getController();if(!c.getPackageName().equals(app.getPackageName()))return;MediaSession.Token token=c.getSessionToken();if(controllers.containsKey(token))return;
   if(controllers.size()>=8){MediaSession.Token oldest=controllers.keySet().iterator().next();remove(oldest);}
   MediaController.Callback callback=new MediaController.Callback(){public void onSessionDestroyed(){remove(token);}public void onMetadataChanged(MediaMetadata m){remember(c);}public void onPlaybackStateChanged(PlaybackState state){remember(c);}};
-  controllers.put(token,c);callbacks.put(token,callback);c.registerCallback(callback,MAIN);notice="Media session connected";remember(c);
+  controllers.put(token,c);published=Collections.unmodifiableList(new ArrayList<>(controllers.values()));callbacks.put(token,callback);c.registerCallback(callback,MAIN);notice="Media session connected";remember(c);
  }
- private static void remove(MediaSession.Token token){MediaController c=controllers.remove(token);MediaController.Callback cb=callbacks.remove(token);if(c!=null&&cb!=null)try{c.unregisterCallback(cb);}catch(RuntimeException ignored){}if(token.equals(timerToken))cancelTimer();}
- public static MediaController controller(){MediaController chosen=null;for(MediaController c:controllers.values()){PlaybackState s=c.getPlaybackState();if(s!=null&&s.getState()==PlaybackState.STATE_PLAYING)return c;if(s!=null&&c.getMetadata()!=null)chosen=c;}return chosen;}
+ private static void remove(MediaSession.Token token){MediaController c=controllers.remove(token);published=Collections.unmodifiableList(new ArrayList<>(controllers.values()));MediaController.Callback cb=callbacks.remove(token);if(c!=null&&cb!=null)try{c.unregisterCallback(cb);}catch(RuntimeException ignored){}if(token.equals(timerToken))cancelTimer();}
+ public static MediaController controller(){MediaController chosen=null;for(MediaController c:published){PlaybackState s=c.getPlaybackState();if(s!=null&&s.getState()==PlaybackState.STATE_PLAYING)return c;if(s!=null&&c.getMetadata()!=null)chosen=c;}return chosen;}
  public static String status(){return controller()==null?notice:"Connected to the published Spotify media session";}
  public static boolean local(MediaController c){return c!=null&&c.getPlaybackInfo()!=null&&c.getPlaybackInfo().getPlaybackType()==MediaController.PlaybackInfo.PLAYBACK_TYPE_LOCAL;}
  public static boolean supports(long action){MediaController c=controller();PlaybackState s=c==null?null:c.getPlaybackState();return local(c)&&s!=null&&(s.getActions()&action)!=0;}

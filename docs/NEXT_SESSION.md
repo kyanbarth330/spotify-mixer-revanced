@@ -2,7 +2,7 @@
 
 ## Current work: 0.17 remaining enhancements
 
-User requested all remaining selected features. 21 independent default-off tools/scoped tweaks added. Read ENHANCEMENTS.md for exact scope: several native/global behaviors remain limited, never claim full Spotify UI interception or complete queue capture. Native queue clearing now has a real revision-bound adapter, confirmation, durable uncertainty record and read-only verification. MediaHook relocates both constructors of exact p.bqf0 from original classes.dex. 65 local core/engine tests and native metadata contracts pass. Own media-session/transport/protocol/DEX/row/profile/persistence Android tests are added. CI/private delivered payload checks pending. Keep PR draft; only own installer/evidence may be public. Historical scopes below are retained.
+User requested all remaining selected features. 21 independent default-off tools/scoped tweaks added. Read ENHANCEMENTS.md for exact scope: several native/global behaviors remain limited, never claim full Spotify UI interception or complete queue capture. Native queue clearing now has a real revision-bound adapter, confirmation, durable uncertainty record and read-only verification. MediaHook relocates both constructors of exact p.bqf0 from original classes.dex. 67 local core/engine tests and native metadata contracts pass. Own media-session/transport/protocol/DEX/row/profile/persistence Android tests are added. CI/private delivered payload checks pending. Keep PR draft; only own installer/evidence may be public. Historical scopes below are retained.
 
 
 ## Current work: 0.16 Equalizer
