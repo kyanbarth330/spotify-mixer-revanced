@@ -21,6 +21,11 @@ public class ThemeStudioTest {
     @Before public void setup(){prefs.edit().clear().putBoolean("theme_enabled",true).putString("theme_preset","ocean").commit();OwnMembership.set(true);}
     @After public void cleanup(){prefs.edit().clear().commit();OwnMembership.set(true);InstrumentationRegistry.getInstrumentation().runOnMainSync(()->ThemeRuntime.refresh(context));device.pressHome();}
     private UiObject2 find(BySelector selector){UiObject2 view=device.wait(Until.findObject(selector),8000);assertNotNull(selector.toString(),view);return view;}
+    private void awaitPreference(String key,Object expected)throws Exception{
+        long deadline=android.os.SystemClock.uptimeMillis()+5000;
+        do{if(java.util.Objects.equals(expected,prefs.getAll().get(key)))return;android.os.SystemClock.sleep(50);}while(android.os.SystemClock.uptimeMillis()<deadline);
+        capture("failure-theme-preference");assertEquals("Saved preference "+key,expected,prefs.getAll().get(key));
+    }
     private void capture(String name)throws java.io.IOException{
         device.waitForIdle();device.executeShellCommand("mkdir -p /sdcard/Download/spotenhancer-evidence");
         device.executeShellCommand("screencap -p /sdcard/Download/spotenhancer-evidence/"+name+".png");
@@ -29,7 +34,7 @@ public class ThemeStudioTest {
     @Test public void previewFavoritesAndSettingsSurviveRecreationWithoutApplying()throws Exception{
         try(ActivityScenario<SpotEnhancerActivity> scenario=launch()){
             find(By.desc("Search themes")).setText("velvet");
-            find(By.desc("Favorite Velvet Purple")).click();
+            find(By.desc("Favorite Velvet Purple")).click();awaitPreference("theme_favorites",java.util.Collections.singleton("velvet"));
             find(By.desc("Preview Velvet Purple")).click();
             assertEquals("ocean",prefs.getString("theme_preset",""));
             assertTrue(prefs.getStringSet("theme_favorites",java.util.Collections.emptySet()).contains("velvet"));
@@ -37,15 +42,16 @@ public class ThemeStudioTest {
             assertEquals("velvet",find(By.desc("Search themes")).getText());
             assertTrue(find(By.desc("Preview Velvet Purple")).isSelected());
             find(By.desc("Search themes")).setText("");capture("20-theme-studio-library-velvet");
-            find(By.text("Settings")).click();capture("21-theme-studio-settings-velvet");find(By.desc("True black")).click();
+            find(By.text("Settings")).click();find(By.text("Appearance"));capture("21-theme-studio-settings-velvet");find(By.desc("True black")).click();
             assertFalse(prefs.getBoolean("amoled_enabled",false));
             scenario.recreate();
             assertTrue(find(By.desc("True black")).isChecked());
             assertEquals("ocean",prefs.getString("theme_preset",""));
-            find(By.text("Apply")).click();device.waitForIdle();
+            find(By.text("Apply")).click();awaitPreference("theme_preset","velvet");awaitPreference("amoled_enabled",true);
             assertEquals("velvet",prefs.getString("theme_preset",""));assertTrue(prefs.getBoolean("amoled_enabled",false));
             new UiScrollable(new UiSelector().className("android.widget.ScrollView")).scrollTextIntoView("Restore defaults");
-            find(By.text("Restore defaults")).click();find(By.res("android","button1")).click();device.waitForIdle();
+            find(By.text("Restore defaults")).click();find(By.res("android","button1")).click();
+            awaitPreference("theme_enabled",false);awaitPreference("amoled_enabled",false);
             assertFalse(prefs.getBoolean("theme_enabled",true));assertFalse(prefs.getBoolean("amoled_enabled",true));
             assertTrue(prefs.getStringSet("theme_favorites",java.util.Collections.emptySet()).contains("velvet"));
         }
