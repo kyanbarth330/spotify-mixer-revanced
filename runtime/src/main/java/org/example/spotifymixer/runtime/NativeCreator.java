@@ -12,7 +12,7 @@ public final class NativeCreator implements CreatorSession.Backend {
  private static Object invoke(Method m,Object target,Object... args)throws Exception{try{return m.invoke(target,args);}catch(InvocationTargetException e){Throwable t=e.getCause();if(t instanceof Exception)throw (Exception)t;throw e;}}
  private static Object await(Object single,ClassLoader loader)throws Exception{Class<?> rx=Class.forName("io.reactivex.rxjava3.core.Single",false,loader);Object timed=invoke(rx.getMethod("timeout",long.class,TimeUnit.class),single,30L,TimeUnit.SECONDS);return invoke(rx.getMethod("blockingGet"),timed);}
  public List<CreatorSession.Track> suggest(CreatorSession.Request request,Consumer<String> progress)throws Exception{
-  if(pending())throw new IOException("Resolve the unfinished creation request before generating another playlist");Object factory=maker;if(factory==null||!NativeBridge.playlistReady())throw new IOException("Open a playlist in Spotify, then refresh the connection");
+  Auth.require("creator");if(pending())throw new IOException("Resolve the unfinished creation request before generating another playlist");Object factory=maker;if(factory==null||!NativeBridge.playlistReady())throw new IOException("Open a playlist in Spotify, then refresh the connection");
   ClassLoader loader=factory.getClass().getClassLoader();Class<?> api=Class.forName("p.sy11",false,loader);
   Object search=invoke(factory.getClass().getMethod("createWebgateService",Class.class,String.class),factory,api,"android-search-onlineproto");
   List<String> queries=CreatorWire.queries(request);List<List<CreatorSession.Track>> groups=new ArrayList<>();for(String q:queries)groups.add(new ArrayList<>());Set<String> unique=new HashSet<>();List<String> tokens=new ArrayList<>(Collections.nCopies(queries.size(),""));boolean[] exhausted=new boolean[queries.size()];int calls=0;int goal=Math.min(1000,request.count+Math.max(50,request.count));
@@ -32,7 +32,7 @@ public final class NativeCreator implements CreatorSession.Backend {
  private void store(JSONObject value)throws IOException{if(!prefs.edit().putString("creator_pending_write",value.toString()).commit())throw new IOException("Could not save creation recovery state");}
  public void clearPending()throws IOException{synchronized(writeLock){if(writer!=null&&writer!=Thread.currentThread())throw new IOException("A creation request is still running");if(!prefs.edit().remove("creator_pending_write").commit())throw new IOException("Could not clear recovery state");}}
  public CreatorSession.Receipt create(String name,List<CreatorSession.Track> tracks,String operation)throws Exception{
-  if(!ready())throw new IOException("Spotify services are not ready");synchronized(writeLock){if(writer!=null||pending())throw new IOException("Resolve the previous creation request first");writer=Thread.currentThread();}
+  Auth.require("creator");if(!ready())throw new IOException("Spotify services are not ready");synchronized(writeLock){if(writer!=null||pending())throw new IOException("Resolve the previous creation request first");writer=Thread.currentThread();}
   try{
   JSONArray ids=new JSONArray();for(CreatorSession.Track t:tracks)ids.put(t.uri);
   JSONObject state=new JSONObject().put("operation",operation).put("name",name).put("tracks",ids).put("uri","");store(state);

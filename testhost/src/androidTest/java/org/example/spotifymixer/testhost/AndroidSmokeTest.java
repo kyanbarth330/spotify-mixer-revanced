@@ -18,6 +18,7 @@ import org.example.spotifymixer.engine.Patcher;
 
 @RunWith(AndroidJUnit4.class)
 public class AndroidSmokeTest {
+    @org.junit.Before public void ownMembership(){OwnMembership.set(true);}
     private static final String PREFS="spotify-mixer-entry-v1";
     private final Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();
     private final UiDevice device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());

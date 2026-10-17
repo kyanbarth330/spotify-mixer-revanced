@@ -12,7 +12,7 @@ public final class ThemeRuntime {
    if(!bindings.containsKey(activity)){Binding binding=new Binding(activity);bindings.put(activity,binding);binding.observe();}bindings.get(activity).request(true);
   }catch(RuntimeException e){Diagnostics.event("Theme attach error: "+e.getClass().getSimpleName());}
  }
- public static void load(Context context){SharedPreferences p=context.getSharedPreferences(Mixer.PREFS,0);palette=p.getBoolean("theme_enabled",false)?ThemePalette.find(p.getString("theme_preset","amoled")):null;if(p.getBoolean("amoled_enabled",false))palette=(palette==null?ThemePalette.find("amoled"):palette).black();ThemePalette value=palette;
+ public static void load(Context context){SharedPreferences p=context.getSharedPreferences(Mixer.PREFS,0);palette=Auth.enabled(p,"themes")?ThemePalette.find(p.getString("theme_preset","amoled")):null;if(Auth.enabled(p,"amoled"))palette=(palette==null?ThemePalette.find("amoled"):palette).black();ThemePalette value=palette;
   if(value==null){EnhancerPanel.defaults();EnhancerTheme.BACKGROUND=0xff0c0f0d;EnhancerTheme.SURFACE=0xff1b211d;EnhancerTheme.GREEN=0xff1ed760;EnhancerTheme.MUTED=0xffb3b3b3;}
   else{EnhancerPanel.colors(value.background,value.surface,value.line,value.text,value.muted,value.accent);EnhancerTheme.BACKGROUND=value.background;EnhancerTheme.SURFACE=value.surface;EnhancerTheme.GREEN=value.accent;EnhancerTheme.MUTED=value.muted;}
  }

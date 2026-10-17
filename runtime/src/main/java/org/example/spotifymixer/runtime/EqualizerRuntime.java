@@ -37,7 +37,7 @@ public final class EqualizerRuntime {
         }catch(ReflectiveOperationException|RuntimeException|LinkageError e){connection="Audio renderer unavailable: "+e.getClass().getSimpleName();}
         refresh();
     }
-    public static void refresh(){if(prefs!=null)SESSION.configure(prefs.getBoolean("eq_enabled",false),hz->level(hz));}
+    public static void refresh(){if(prefs!=null)SESSION.configure(Auth.enabled(prefs,"equalizer"),hz->level(hz));}
     public static int level(int hz){int preset=prefs==null?0:prefs.getInt("eq_preset",0);return preset==5?prefs.getInt("eq_hz_"+hz,0):EqualizerSession.presetLevel(preset,hz);}
     public static EqualizerSession.Device device(){return SESSION.device();}
     public static String status(){return SESSION.status()+"\n"+connection;}

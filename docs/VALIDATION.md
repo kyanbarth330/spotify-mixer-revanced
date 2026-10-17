@@ -264,3 +264,19 @@ all 67 core/engine tests pass. The Android transformed-DEX fixture reproduces
 that reuse too. Android CI and actual Spotify startup confirmation remain
 required; no device crash stack trace was supplied, so other crash causes
 cannot yet be ruled out. No Spotify binaries or implementation were published.
+
+
+## 0.18 — smarter Creator and five music tools (2026-10-17)
+
+[Installer build 39023119583](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39023119583) passes engine/runtime tests and final payload checks. [Own installer 12096504800](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39023119583/artifacts/12096504800), product source fe7107e0158e1fb49dd48d5864832b86e38c8036. 80 local core/engine tests pass, including nine Creator intent/diversity/filter regressions and four full-list comparison tests. No new native hooks or permissions; the 0.17 startup register-reuse correction is retained.
+
+Exact downloaded payload: 4 DEX / 281 original runtime/UI classes. Private supported-input patch/sign roundtrip passes v2/v3, 4,858 retained ZIP entries unchanged, all 102,449 original classes uniquely present, private/translucent Activity and original manifest string indexes verified. No Spotify APK, proprietary implementation or signing key was published.
+
+Own Android run 39022478119 failed a test assertion: the new test opened Track Details without enabling its independent switch. Test-only source 758053e enables it explicitly. This failed run is not passing device evidence. [Final own Android run 39023119454](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39023119454) passes; new test coverage includes bookmark seek against an own framework session, saved search persistence/profile exclusion, complete protocol-fixture comparison without writes, Cinema keep-screen-on cleanup, process-stop storage and visible Dutch-party query plan before any account write. These fixtures cannot establish live Spotify relevance, startup/login or audible playback. See PLAYLIST_CREATOR.md and ENHANCEMENTS.md for limits.
+
+
+## 0.19 accounts and mixer metadata — in progress
+
+Own PHP/MySQL service and Android server-verified tier UI are implemented; no live domain deployment or login is claimed. The owner selected PHP/MySQL but supplied no server access. Six of 32 tools are Free; 26 Premium, account/diagnostics always available. Own fixtures set membership through androidTest-only reflection, not a shipped bypass. Tests cover Free locks, token Keystore encryption and one-row playlist metadata/own artwork before track preparation. Backend HTTP/MySQL tests exercise real Argon2id, ignored client upgrade claims, operator grants, session verification, password-change/logout revocation and rate limits. CI remains pending.
+
+85 local core/engine tests pass. Native metadata fields match the supported original input: picture decoration policy12, PlaylistMetadata.pictures8, ImageGroup standard/small link1/2. No new proprietary hook is added. Mixer metadata uses a separate one-row request; covers are bounded and loaded only from supported Spotify HTTPS sources or canonical image/mosaic links. Unavailable metadata/artwork is shown as unavailable. See server/README.md for deployment and security limits.

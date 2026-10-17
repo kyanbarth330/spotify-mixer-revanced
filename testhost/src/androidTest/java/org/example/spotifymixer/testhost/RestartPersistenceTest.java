@@ -10,6 +10,7 @@ import static org.junit.Assert.*;
 /** Two separate instrumentation processes; no Spotify account or playback involved. */
 @RunWith(AndroidJUnit4.class)
 public class RestartPersistenceTest {
+    @org.junit.Before public void ownMembership(){OwnMembership.set(true);}
     @Test public void replacementSurvivesProcessStop(){
         String phase=InstrumentationRegistry.getArguments().getString("persistence");
         Assume.assumeTrue("Run explicitly in write/read phases",phase!=null);

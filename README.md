@@ -1,10 +1,16 @@
 # SpotEnhancer
 
+## Version 0.19 — accounts and playlist metadata (validation in progress)
+
+Adds an English account screen and server-verified Free/Premium locks: 6 of 32 product tools are Free, 26 Premium. The own PHP/MySQL backend targets `https://spotenhancer.sourcemod.lol` and **must be installed/configured by the owner**; it is not deployed by committing this code. Until the service is available and verifies an upgraded account, Premium tools stay locked. No checkout or Spotify Premium rights are provided. See [server installation](server/README.md).
+
+Mixer source names and covers are now fetched independently on opening the mixer, without requiring Load mix. Covers come from native metadata; absent/unavailable artwork is marked unavailable rather than presented as a real placeholder. Native wire fields were checked against the pinned input. Android/backend/build validation is in progress.
+
 ## Version 0.18 — smarter Creator and music toolkit
 
 **Playlist Creator** now expands descriptions such as “Dutch party songs” into targeted searches, shows its search plan, filters clearly labelled unwanted karaoke/tribute versions and spreads artists across the proposal. It remains local keyword logic rather than AI/language detection; review relevance before creating.
 
-Five new independently opt-in tools: **Track Bookmarks** (local timestamps; jump only while the same track is playing), **Playlist Compare** (complete read-only canonical-ID overlap/unique lists), **Track Details** (published session metadata), **Saved Searches** (local phrases opened inside Spotify), and **Keep Screen Awake** (Cinema only, released when leaving). No new native hooks or permissions. Bookmarks/search phrases are excluded from Settings Profiles. Build and own Android verification pending; see [scope](docs/ENHANCEMENTS.md).
+Five new independently opt-in tools: **Track Bookmarks** (local timestamps; jump only while the same track is playing), **Playlist Compare** (complete read-only canonical-ID overlap/unique lists), **Track Details** (published session metadata), **Saved Searches** (local phrases opened inside Spotify), and **Keep Screen Awake** (Cinema only, released when leaving). No new native hooks or permissions. Bookmarks/search phrases are excluded from Settings Profiles. [Download installer 0.18](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/39023119583/artifacts/12096504800). Build and exact downloaded-payload patch/sign checks pass; final own Android verification pending. See [scope](docs/ENHANCEMENTS.md).
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 

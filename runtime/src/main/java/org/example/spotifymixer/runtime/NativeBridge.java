@@ -57,12 +57,14 @@ public final class NativeBridge implements MixSession.Backend {
         return new MixSession.Playlist(title,tracks);
     }
     public static boolean playlistReady(){return playlist!=null;}
-    static byte[] creatorCall(byte[] request)throws Exception{
+    public static PlaylistWire.Page metadata(String uri)throws Exception{return PlaylistWire.response(nativeCall("spotify.playlist_esperanto.proto.PlaylistDataService","Get",PlaylistWire.request(uri,0,1)));}
+    static byte[] creatorCall(byte[] request)throws Exception{return nativeCall("spotify.playlist_esperanto.proto.RootlistModificationService","Modify",request);}
+    private static byte[] nativeCall(String api,String operation,byte[] request)throws Exception{
         Object service=playlist;if(service==null)throw new IOException("Open a playlist in Spotify first");
         ClassLoader loader=service.getClass().getClassLoader();Object client=field(service,"f"),context=field(service,"c");Class<?> base=type(loader,"com.spotify.esperanto.esperanto.CoroutineClientBase");Field tf=base.getDeclaredField("transport");tf.setAccessible(true);Object transport=tf.get(client);
         Class<?> continuation=type(loader,"p.uel");CountDownLatch done=new CountDownLatch(1);AtomicReference<Object> result=new AtomicReference<>();
         Object callback=Proxy.newProxyInstance(loader,new Class<?>[]{continuation},(proxy,method,args)->{switch(method.getName()){case "getContext":return context;case "resumeWith":result.set(args[0]);done.countDown();return null;case "toString":return "SpotEnhancer create continuation";case "hashCode":return System.identityHashCode(proxy);case "equals":return proxy==args[0];default:throw new UnsupportedOperationException(method.getName());}});
-        Object response=invoke(type(loader,"com.spotify.esperanto.esperanto.CoroutineTransport").getMethod("callSingle",String.class,String.class,byte[].class,continuation),transport,"spotify.playlist_esperanto.proto.RootlistModificationService","Modify",request,callback);
+        Object response=invoke(type(loader,"com.spotify.esperanto.esperanto.CoroutineTransport").getMethod("callSingle",String.class,String.class,byte[].class,continuation),transport,api,operation,request,callback);
         if(!(response instanceof byte[])){if(!done.await(30,TimeUnit.SECONDS))throw new IOException("Creation timed out; check Spotify before retrying");response=result.get();}
         if(!(response instanceof byte[])){invoke(type(loader,"p.yd70").getMethod("M",Object.class),null,response);throw new IOException("Unexpected creation response");}return (byte[])response;
     }

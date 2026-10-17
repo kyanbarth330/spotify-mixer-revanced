@@ -44,7 +44,7 @@ public final class CreatorPanel {
     private void refresh(){boolean on=enabled.isChecked();for(EditText field:fields())field.setEnabled(on&&!busy);save.setEnabled(on&&!busy);generate.setEnabled(on&&!busy&&session!=null&&(nativeBackend==null||NativeCreator.ready()));enabled.setEnabled(!busy);}
     private void invalidate(){generation++;preview=null;if(session!=null)session.invalidate();previewBody.removeAllViews();}
     private boolean save(){boolean ok=prefs.edit().putString("creator_name",name.getText().toString()).putString("creator_genres",genres.getText().toString()).putString("creator_artists",artists.getText().toString()).putString("creator_description",description.getText().toString()).putString("creator_count",count.getText().toString()).commit();if(!ok)feedback.setText("Could not save the draft");return ok;}
-    private void generate(){
+    private void generate(){if(!Auth.allowed("creator")){feedback.setText("SpotEnhancer Premium is required.");return;}
         if(session==null||!enabled.isChecked()||busy)return;
         final CreatorSession.Request request;
         try{request=new CreatorSession.Request(name.getText().toString(),genres.getText().toString(),artists.getText().toString(),description.getText().toString(),Integer.parseInt(count.getText().toString()));}catch(NumberFormatException e){feedback.setText("Choose 1–500 tracks");return;}catch(IllegalArgumentException e){feedback.setText(e.getMessage());return;}
