@@ -1,8 +1,8 @@
 # SpotEnhancer — next session
 
-## Current work: 0.18 music toolkit
+## Current work: 0.18 music toolkit and smarter Creator
 
-Base is startup fix 3fccd96, retaining all 0.17 tools and 0.16 equalizer. User accepts the fix and requests more enhancements. Add five independently default-off tools: timestamp bookmarks, read-only full playlist comparison, published track/session details, saved in-Spotify searches and Cinema-only keep-screen-on. No new native DEX hooks, services or permissions. 71 core/engine tests pass; own Android/installer CI pending. Own fixture testing is not Spotify/login/audio proof. Keep draft PR #1 open; never publish Spotify binaries/keys.
+Base is startup fix 3fccd96, retaining all 0.17 tools and 0.16 equalizer. User accepts the fix and requests more enhancements. Add five independently default-off tools: timestamp bookmarks, read-only full playlist comparison, published track/session details, saved in-Spotify searches and Cinema-only keep-screen-on. No new native DEX hooks, services or permissions. User then prioritized improving Creator relevance for “Dutch party songs”. CreatorIntent expands recognized intents transparently, retains explicit selectors/extra keywords, filters clearly labelled unwanted karaoke/tributes and diversifies exact artist credits. UI shows search plan before/after searching; existing confirmed one-write/readback flow is unchanged. 79 core/engine tests pass; own Android/installer CI pending. Own fixture testing is not Spotify/login/audio proof. Keep draft PR #1 open; never publish Spotify binaries/keys.
 
 ## Current work: 0.17 remaining enhancements
 

@@ -26,13 +26,7 @@ public final class CreatorWire {
   PlaylistWire.Message response=new PlaylistWire.Message(raw);int code=response.message(1).integer(1,-1);if(code<200||code>=300)throw new IOException("Spotify rejected creation ("+code+")");
   PlaylistWire.Message result=response.message(2);String uri=result.string(2);if(result.integer(1,0)!=1||!uri.matches("spotify:playlist:[A-Za-z0-9]{22}"))throw new IOException("Spotify did not confirm a new playlist identity");return uri;
  }
- /** Genre/artist selectors use Spotify search syntax; description is literal search keywords, not AI. */
- public static List<String> queries(CreatorSession.Request r){
-  List<String> genres=split(r.genres),artists=split(r.artists);if(genres.isEmpty())genres.add("");if(artists.isEmpty())artists.add("");List<String> out=new ArrayList<>();
-  if(genres.size()*artists.size()>12)throw new IllegalArgumentException("Use at most 12 genre/artist combinations");
-  for(String g:genres)for(String a:artists){String q=(g.isEmpty()?"":"genre:"+quoted(g)+" ")+(a.isEmpty()?"":"artist:"+quoted(a)+" ")+r.description;out.add(q.trim());}return Collections.unmodifiableList(out);
- }
- private static List<String> split(String s){List<String> values=new ArrayList<>();for(String x:s.split(","))if(!x.trim().isEmpty()&&!values.contains(x.trim()))values.add(x.trim());return values;}
- private static String quoted(String s){return "\""+s.replace("\\","\\\\").replace("\"","\\\"")+"\"";}
+ /** Explicit selectors and transparent local intent expansion. */
+ public static List<String> queries(CreatorSession.Request r){return CreatorIntent.queries(r);}
  private CreatorWire(){}
 }

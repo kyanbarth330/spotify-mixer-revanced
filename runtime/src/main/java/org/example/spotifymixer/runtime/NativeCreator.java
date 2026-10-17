@@ -15,18 +15,18 @@ public final class NativeCreator implements CreatorSession.Backend {
   if(pending())throw new IOException("Resolve the unfinished creation request before generating another playlist");Object factory=maker;if(factory==null||!NativeBridge.playlistReady())throw new IOException("Open a playlist in Spotify, then refresh the connection");
   ClassLoader loader=factory.getClass().getClassLoader();Class<?> api=Class.forName("p.sy11",false,loader);
   Object search=invoke(factory.getClass().getMethod("createWebgateService",Class.class,String.class),factory,api,"android-search-onlineproto");
-  List<String> queries=CreatorWire.queries(request);List<List<CreatorSession.Track>> groups=new ArrayList<>();for(String q:queries)groups.add(new ArrayList<>());Set<String> unique=new HashSet<>();List<String> tokens=new ArrayList<>(Collections.nCopies(queries.size(),""));boolean[] exhausted=new boolean[queries.size()];
-  for(int round=0;round<20&&unique.size()<request.count;round++){
+  List<String> queries=CreatorWire.queries(request);List<List<CreatorSession.Track>> groups=new ArrayList<>();for(String q:queries)groups.add(new ArrayList<>());Set<String> unique=new HashSet<>();List<String> tokens=new ArrayList<>(Collections.nCopies(queries.size(),""));boolean[] exhausted=new boolean[queries.size()];int calls=0;int goal=Math.min(1000,request.count+Math.max(50,request.count));
+  for(int round=0;round<20&&unique.size()<goal&&calls<48;round++){
    boolean more=false;for(int i=0;i<queries.size();i++){
-    if(exhausted[i])continue;more=true;progress.accept("Searching preference "+(i+1)+" of "+queries.size()+" · "+unique.size()+" unique tracks");
+    if(Thread.currentThread().isInterrupted())throw new InterruptedException();if(exhausted[i]||calls>=48)continue;calls++;more=true;progress.accept("Searching "+queries.get(i)+" · "+unique.size()+" candidates");
     Map<String,String> params=new LinkedHashMap<>();params.put("query",queries.get(i));params.put("entity_types","track");params.put("limit","50");params.put("locale",Locale.getDefault().toLanguageTag());params.put("request_id",UUID.randomUUID().toString());params.put("timestamp",Long.toString(System.currentTimeMillis()));if(!tokens.get(i).isEmpty())params.put("page_token",tokens.get(i));
     Object response=await(invoke(api.getMethod("a",Map.class,Map.class),search,params,Collections.emptyMap()),loader);
     byte[] raw=(byte[])invoke(response.getClass().getMethod("toByteArray"),response);CreatorWire.Page page=CreatorWire.search(raw);
-    for(CreatorSession.Track track:page.tracks)if(unique.add(track.uri))groups.get(i).add(track);
+    for(CreatorSession.Track track:page.tracks)if(CreatorIntent.accept(track,request)&&unique.add(track.uri))groups.get(i).add(track);
     exhausted[i]=page.next.isEmpty()||page.next.equals(tokens.get(i));tokens.set(i,page.next);
    }if(!more)break;
   }
-  List<CreatorSession.Track> all=new ArrayList<>();for(int rank=0;;rank++){boolean added=false;for(List<CreatorSession.Track> group:groups)if(rank<group.size()){all.add(group.get(rank));added=true;}if(!added)break;}return all;
+  List<CreatorSession.Track> all=new ArrayList<>();for(int rank=0;;rank++){boolean added=false;for(List<CreatorSession.Track> group:groups)if(rank<group.size()){all.add(group.get(rank));added=true;}if(!added)break;}progress.accept("Balancing artists across "+all.size()+" candidates");return CreatorIntent.diversify(all);
  }
  public boolean pending(){return prefs.contains("creator_pending_write");}
  private void store(JSONObject value)throws IOException{if(!prefs.edit().putString("creator_pending_write",value.toString()).commit())throw new IOException("Could not save creation recovery state");}

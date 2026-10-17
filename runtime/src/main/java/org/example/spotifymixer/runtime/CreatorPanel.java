@@ -12,16 +12,17 @@ public final class CreatorPanel {
     private int generation;private boolean closed,busy;
     public CreatorPanel(Activity activity,LinearLayout body,SharedPreferences prefs,CreatorSession.Backend backend){
         this.activity=activity;this.body=body;this.prefs=prefs;nativeBackend=backend instanceof NativeCreator?(NativeCreator)backend:null;session=backend==null?null:new CreatorSession(backend);
-        label(body,"Find your next playlist",24,true);muted(body,"Choose genres, artists or describe the music you want. Uses Spotify search keywords, not AI. Review every proposal before creating a playlist.");
+        label(body,"Find your next playlist",24,true);muted(body,"Choose genres, artists or describe the music you want. Uses local intent expansion and Spotify search, not AI. Review every proposal before creating a playlist.");
         enabled=new Switch(new ContextThemeWrapper(activity,android.R.style.Theme_Material_NoActionBar));enabled.setText("Enable Playlist Creator");enabled.setTextColor(EnhancerPanel.WHITE);EnhancerPanel.styleSwitch(enabled);enabled.setChecked(prefs.getBoolean("creator_enabled",false));body.addView(enabled);
         LinearLayout form=EnhancerPanel.card(body);
         name=field(form,"Playlist name","e.g. Evening rock","creator_name",80,false);
         naming=muted(form,"");genres=field(form,"Genres","e.g. rock, soul","creator_genres",200,false);
         artists=field(form,"Artists","e.g. Dire Straits, Sade","creator_artists",200,false);
-        description=field(form,"Music preferences","Search keywords, e.g. acoustic guitar","creator_description",500,false);
+        description=field(form,"Music preferences","Describe a vibe, e.g. Dutch party songs","creator_description",500,false);
         count=field(form,"Number of tracks","1–500","creator_count",3,true);if(count.getText().length()==0)count.setText("30");
         feedback=muted(body,backend==null?"Spotify generation is unavailable in this build. You can save your preferences; no playlist will be created.":nativeBackend!=null&&!NativeCreator.ready()?"Open a playlist in Spotify, then refresh the connection. Nothing is created before confirmation.":"Ready to generate a proposal. Nothing is created before confirmation.");
         save=button(body,"Save draft",false,()->{if(save())feedback.setText("Draft saved on this device. No playlist was created.");});
+        button(body,"Preview search plan",false,()->{try{CreatorSession.Request request=new CreatorSession.Request(name.getText().toString(),genres.getText().toString(),artists.getText().toString(),description.getText().toString(),Integer.parseInt(count.getText().toString()));new AlertDialog.Builder(activity,android.R.style.Theme_Material_Dialog_Alert).setTitle("How your playlist is searched").setMessage(CreatorIntent.explain(request)).setPositiveButton("Close",null).show();}catch(IllegalArgumentException e){feedback.setText(e.getMessage());}});
         generate=button(body,"Generate preview",true,this::generate);
         if(nativeBackend!=null){muted(body,NativeCreator.state());button(body,"Refresh connection",false,()->{feedback.setText(NativeCreator.state());refresh();});button(body,"Check previous creation",false,()->{
             if(busy)return;busy=true;refresh();final int token=generation;new Thread(()->{try{CreatorSession.Receipt receipt=nativeBackend.verifyPending();post(token,()->feedback.setText("Created "+receipt.name+" · "+receipt.count+" tracks"));}catch(Exception e){post(token,()->feedback.setText(message(e)));}finally{post(token,()->{busy=false;refresh();});}},"spotenhancer-creator-check").start();
@@ -52,7 +53,7 @@ public final class CreatorPanel {
     }
     private void renderPreview(){
         previewBody.removeAllViews();final CreatorSession.Preview shown=preview;if(shown==null)return;
-        label(previewBody,"Review proposal",20,true);label(previewBody,shown.request.playlistName(),16,true);muted(previewBody,shown.tracks.size()+" tracks · requested "+shown.request.count);
+        label(previewBody,"Review proposal",20,true);label(previewBody,shown.request.playlistName(),16,true);muted(previewBody,shown.tracks.size()+" tracks · requested "+shown.request.count);muted(previewBody,CreatorIntent.explain(shown.request));
         for(CreatorSession.Track track:shown.tracks){LinearLayout row=EnhancerPanel.card(previewBody);label(row,track.title,14,true);muted(row,track.artist);Button remove=button(row,"Remove track",false,()->{try{preview=session.remove(preview,track.uri);renderPreview();}catch(Exception e){feedback.setText(message(e));}});remove.setContentDescription("Remove "+track.title);remove.setEnabled(shown.tracks.size()>1);}
         button(previewBody,"Create Playlist",true,()->new AlertDialog.Builder(activity,android.R.style.Theme_Material_Dialog_Alert).setTitle("Create playlist?").setMessage(shown.request.playlistName()+" · "+shown.tracks.size()+" tracks").setNegativeButton("Cancel",null).setPositiveButton("Create",(dialog,which)->create(shown)).show());
     }

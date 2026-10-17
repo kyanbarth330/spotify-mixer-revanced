@@ -1,6 +1,8 @@
 # SpotEnhancer
 
-## Version 0.18 — music toolkit
+## Version 0.18 — smarter Creator and music toolkit
+
+**Playlist Creator** now expands descriptions such as “Dutch party songs” into targeted searches, shows its search plan, filters clearly labelled unwanted karaoke/tribute versions and spreads artists across the proposal. It remains local keyword logic rather than AI/language detection; review relevance before creating.
 
 Five new independently opt-in tools: **Track Bookmarks** (local timestamps; jump only while the same track is playing), **Playlist Compare** (complete read-only canonical-ID overlap/unique lists), **Track Details** (published session metadata), **Saved Searches** (local phrases opened inside Spotify), and **Keep Screen Awake** (Cinema only, released when leaving). No new native hooks or permissions. Bookmarks/search phrases are excluded from Settings Profiles. Build and own Android verification pending; see [scope](docs/ENHANCEMENTS.md).
 

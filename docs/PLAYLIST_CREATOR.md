@@ -1,10 +1,14 @@
-# Playlist Creator — 0.14 experimental native integration
+# Playlist Creator — 0.18 intent-aware search
 
 ## Current flow
 
 Green wrench -> Playlist Creator -> Enable -> name + genres/artists/search keywords + 1–500 tracks -> Generate preview -> review/remove -> Create Playlist -> confirm. Names start `SpotEnhancer-`. Open a normal playlist and Refresh connection if the search/playlist services are waiting. Everything remains in Spotify. No autoplay, URL entry, OAuth handoff, token extraction or external AI service.
 
-Genres and artists use quoted Spotify search filters. Music preferences are literal keywords, not semantic AI interpretation. Multiple comma-separated selectors produce at most 12 combinations; their native search results are interleaved and deduplicated. Each request fetches 50 results with real titles/artists and page tokens, at most 20 rounds per combination. Insufficient unique matches fail visibly rather than silently lowering the count. Removing preview tracks explicitly lowers the confirmed count. Server-side restrictions/errors remain in effect; actual live search relevance and server count limits need device evidence.
+Genres and artists retain quoted Spotify filters. Local rules recognize Dutch party / Nederlandse feestmuziek (including in the genre field), Dutch acoustic/chill, and rock/metal workout descriptions. “Dutch party songs” expands to six searches including carnaval, levenslied and Dutch-pop feest, Nederlandse feestmuziek and Hollandse meezingers. Extra Dutch-party keywords are retained; 80s/90s/00s become year ranges. Other phrases remain literal searches. This is a transparent heuristic, not AI, a language detector or a guarantee of mood relevance. Use **Preview search plan** before searching; the plan is also shown with the proposal.
+
+Queries stay bounded to 12, interleaved across explicit genre/artist selectors. Up to 48 native search calls total, at most 20 pages/query and 50 results/page collect a larger candidate pool (requested count plus at least 50, capped at 1,000 target candidates). Each call retains its 30-second timeout. Clearly labelled karaoke/tribute artists or versions are excluded unless requested. Results keep within-artist search relevance while round-robin spreading exact normalized artist credits; this does not merge alternate spellings/collaborations or alternate recordings. Canonical track identities remain deduplicated. It does not use invented popularity, audio features or language scores.
+
+Insufficient unique results fail visibly; no unrelated automatic fallback or lower count. The exact proposal remains removable/reviewable before any account write. Live Dutch-party relevance still requires user review; fixture tests cannot establish it. Removing preview tracks explicitly lowers the confirmed count. Server restrictions/errors stay in effect.
 
 ## Native creation and recovery
 
