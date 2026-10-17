@@ -2,13 +2,13 @@
 
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
-## [Download SpotEnhancer 0.15](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38916246028/artifacts/12052692365)
+## [Download SpotEnhancer 0.16](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38983051463/artifacts/12082135858)
 
 Extract and install `installer-debug.apk`, select the original supported Spotify APK, build, and confirm Android installation. The app label is **SpotEnhancer Installer**.
 
-## Version 0.16 — Equalizer (validation in progress)
+## Version 0.16 — Equalizer
 
-Green wrench -> Equalizer: default-off switch, Flat / Bass Boost / Vocal / Treble Boost / Warm presets and manual bands supplied by Android. Saved controls apply to local Spotify audio sessions; remote Connect devices are unaffected. Start or pause/resume a track and Refresh connection if waiting. No global audio session, recording, extra proprietary hook or automatic playback. [Scope and testing](docs/EQUALIZER.md). The 0.15 download above remains the previous validated installer until 0.16 checks finish.
+Green wrench -> Equalizer: default-off switch, Flat / Bass Boost / Vocal / Treble Boost / Warm presets and manual bands supplied by Android. Saved controls apply to local Spotify audio sessions; remote Connect devices are unaffected. Start or pause/resume a track and Refresh connection if waiting. No global audio session, recording, extra proprietary hook or automatic playback. [Scope and testing](docs/EQUALIZER.md). [Installer build](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38983051463) and private exact-input patch/sign/inventory checks pass. [Own Android35 tests](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38983771883/artifacts/12082462688) pass (15 executed, plus process-stop persistence). Live Spotify audio remains unverified.
 
 ## Version 0.15 — Theme Studio
 

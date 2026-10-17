@@ -2,7 +2,7 @@
 
 ## Current work: 0.16 Equalizer
 
-User narrowed all-feature request to Equalizer first. Adds independent default-off persisted switch, five presets/custom frequency bands, device gain limits, local positive-session Android effect and native audio listener reflection (no new DEX hook). See EQUALIZER.md. Five local tests pass; CI/build/private payload validation pending. No live Spotify audio success claimed. Previous 0.15 scope text below is historical.
+User narrowed all-feature request to Equalizer first. Adds independent default-off persisted switch, five presets/custom frequency bands, device gain limits, local positive-session Android effect and native audio listener reflection (no new DEX hook). See EQUALIZER.md. 56 local core/engine tests pass (5 equalizer regressions). Build 38983051463 / own installer 12082135858 passes; exact delivered runtime privately patches/signs the original with all 102,449 originals unique and 4,858 retained entries unchanged. Final own Android run 38983771883 / evidence 12082462688 passes 15 executed tests, zero failures/errors, plus write/force-stop/read persistence. Test-only source 50ffde1 fixes asynchronous preference assertions and startup synchronization after initial failed suites (see VALIDATION.md). Downloaded XML/phase logs and own equalizer screenshot checked. No live Spotify audio success claimed. Previous 0.15 scope text below is historical.
 
 
 ## Current work: 0.15 Theme Studio
