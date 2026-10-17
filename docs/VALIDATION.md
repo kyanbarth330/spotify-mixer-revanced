@@ -244,3 +244,23 @@ Exact downloaded payload privately patches/signs original 9.1.90 with valid v2/v
 Initial Android run 38983051473 failed one UI assertion immediately after Apply preset (saved value was not yet visible to instrumentation); earlier run 38983016023 reached an active real Android Equalizer and captured its rendered frequency bands, then failed an immediate reset assertion and a fixture window startup check. These are failed suites, not passing evidence. Test-only source 50ffde1 waits for actual persisted preferences/initial windows, avoids attempting a long scroll before any scroll view exists, and preserves a screenshot on missing UI. [Final rerun 38983771883](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38983771883) passes: downloaded XML reports 16 tests, 0 failures/errors, 1 intentional phase-only skip (15 executed), 173.842 seconds. Equalizer UI/native Android test passes, including presets, manual custom bands, reset and disable/release. Separate write/force-stop/read phases each report OK (1 test), including enabled/custom/60 Hz preference persistence. [Own-code evidence 12082462688](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38983771883/artifacts/12082462688) includes screenshots/reports/logs (seven-day retention). Downloaded XML, both phase logs and rendered equalizer screenshot were inspected. No production behavior is changed by that test-only commit.
 
 Own audio test uses a real, non-playing AudioTrack and Android Equalizer plus an original handwritten event bus. It is not a Spotify/login/audible playback test. Live audio, headphones/Bluetooth/offload behavior and remote route transitions remain unverified. Spotify Connect/remote playback is not equalized. See EQUALIZER.md.
+
+## 0.17 startup regression correction (2026-10-17)
+
+User reports that the equalizer release opens successfully, while installer build #58
+(commit 4bbadfc) produces a Spotify app that crashes immediately. A green installer
+build and own-fixture tests did not establish native Spotify startup success.
+
+Inspection of the explicitly supplied 9.1.90 APK identifies a definite invalid
+injection: both media-wrapper constructors reuse their incoming `this` register
+for integer flags before returning. The old return-site capture passed that
+integer to an Object parameter, violating DEX verification types. Capture now
+runs immediately after the exact MediaSession field assignment, passing its
+object source register to `captureSession(MediaSession)`. Unexpected assignment
+counts abort patching instead of guessing. No extra registers are allocated.
+
+The JVM regression fixture now deliberately overwrites `this` with an integer;
+all 67 core/engine tests pass. The Android transformed-DEX fixture reproduces
+that reuse too. Android CI and actual Spotify startup confirmation remain
+required; no device crash stack trace was supplied, so other crash causes
+cannot yet be ruled out. No Spotify binaries or implementation were published.
