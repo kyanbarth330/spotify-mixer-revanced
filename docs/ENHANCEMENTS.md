@@ -37,3 +37,18 @@ The exact original `p.bqf0` media-session wrapper is relocated whole from classe
 Confirm Queue Clear reuses the captured native player client's `p.uay` queue adapter, existing `GetQueue` Flowable's first element and `SetQueueCommand`. Exact field/method contracts are asserted locally against the pinned APK. A current revision/current-track identity must match the confirmed preview, the pending record commits before a single mutation, and readback must show the same current identity, preserved previous items and empty upcoming items. Server refusal, timeout/refill or changed session leaves explicit recovery state; never automatically retries a write. Protocol fixtures are original handwritten doubles, not Spotify source or real server results.
 
 67 local core/engine tests pass, including link normalization, duplicate identity counts, seek/volume bounds, skip timing, wrapper hook relocation and revision-bound queue-clear uncertainty/read-only recovery. Own Android tests exercise original media sessions, synthetic transformed DEX execution, real framework transport callbacks, settings/profile exclusions, reversible rows, own playlist/queue protocol doubles, plus process-stop persistence. Build, emulator and exact delivered-payload private patch/sign/inventory results will be recorded in VALIDATION.md after completion. No live Spotify/login/audible playback result is claimed.
+
+
+## 0.18 additional tools
+
+All five switches default off and appear in the existing searchable feature catalog.
+
+| Tool | Actual behavior | Limits |
+|---|---|---|
+| Track Bookmarks | Save title/artist/label/canonical URI and extrapolated published position locally; reopen track; confirmed deletion; jump to saved position on same local track | 200 moments; no autoplay or cross-track deferred seek; depends on published identity/seek capability |
+| Playlist Compare | Load both full selected playlist sources, compare unique canonical track IDs in stable order | Read-only, no account mutation; IDs rather than unavailable per-track titles; first 30 IDs per group rendered, all tracks compared; sequential reads are not an atomic cross-playlist snapshot |
+| Track Details | Read title, artist, album, duration, current estimated position, route, speed and published queue-window size | Snapshot refreshed explicitly; no codec/bitrate guessing or full library claims |
+| Saved Searches | Save/reopen/delete up to 50 phrases with encoded native Spotify search navigation | Device-local; phrases max 200 characters; no network/search request until user opens Spotify search |
+| Keep Screen Awake | Set Activity window keep-screen-on flag while Cinema is open | No wake lock/service/system timeout change; clears only the flag this panel added on close; may use more battery |
+
+Bookmarks and saved phrases are not copied into Settings Profiles. Disabling a tool hides its controls and retains its saved data. Existing 0.17 media-hook register-reuse correction is preserved.

@@ -1,5 +1,9 @@
 # SpotEnhancer — next session
 
+## Current work: 0.18 music toolkit
+
+Base is startup fix 3fccd96, retaining all 0.17 tools and 0.16 equalizer. User accepts the fix and requests more enhancements. Add five independently default-off tools: timestamp bookmarks, read-only full playlist comparison, published track/session details, saved in-Spotify searches and Cinema-only keep-screen-on. No new native DEX hooks, services or permissions. 71 core/engine tests pass; own Android/installer CI pending. Own fixture testing is not Spotify/login/audio proof. Keep draft PR #1 open; never publish Spotify binaries/keys.
+
 ## Current work: 0.17 remaining enhancements
 
 User requested all remaining selected features. 21 independent default-off tools/scoped tweaks added. Read ENHANCEMENTS.md for exact scope: several native/global behaviors remain limited, never claim full Spotify UI interception or complete queue capture. Native queue clearing now has a real revision-bound adapter, confirmation, durable uncertainty record and read-only verification. MediaHook relocates both constructors of exact p.bqf0 from original classes.dex. 67 local core/engine tests and native metadata contracts pass. Own media-session/transport/protocol/DEX/row/profile/persistence Android tests are added. CI/private delivered payload checks pending. Keep PR draft; only own installer/evidence may be public. Historical scopes below are retained.

@@ -1,5 +1,9 @@
 # SpotEnhancer
 
+## Version 0.18 — music toolkit
+
+Five new independently opt-in tools: **Track Bookmarks** (local timestamps; jump only while the same track is playing), **Playlist Compare** (complete read-only canonical-ID overlap/unique lists), **Track Details** (published session metadata), **Saved Searches** (local phrases opened inside Spotify), and **Keep Screen Awake** (Cinema only, released when leaving). No new native hooks or permissions. Bookmarks/search phrases are excluded from Settings Profiles. Build and own Android verification pending; see [scope](docs/ENHANCEMENTS.md).
+
 An independent local Android installer for the exact user-supplied Spotify 9.1.90.2270 APK. No Spotify binary is distributed here.
 
 ## [Download SpotEnhancer 0.16](https://github.com/kyanbarth330/spotify-mixer-revanced/actions/runs/38983051463/artifacts/12082135858)

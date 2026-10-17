@@ -26,6 +26,11 @@ public final class FeatureCatalog {
   new Feature("track_info","Always Show Track Info","Expand supported track text labels","Appearance",null),
   new Feature("start","Start Page","Choose a launcher landing page","Tools",null),
   new Feature("skip_guard","No Accidental Skip","Confirm repeated skip presses","Playback",null),
+  new Feature("bookmarks","Track Bookmarks","Save moments in your music","Tools",null),
+  new Feature("compare","Playlist Compare","Find overlap and unique tracks","Tools",null),
+  new Feature("details","Track Details","Inspect published track and session data","Tools",null),
+  new Feature("saved_searches","Saved Searches","Keep your favorite Spotify searches","Tools",null),
+  new Feature("awake","Keep Screen Awake","Keep Cinema visible while open","Appearance",null),
   new Feature("profiles","Settings Profiles","Save and restore enhancer settings","Tools",null)
  };
  public static Feature find(String id){for(Feature f:ALL)if(f.id.equals(id))return f;throw new IllegalArgumentException("Unknown enhancement");}
