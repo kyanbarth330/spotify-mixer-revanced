@@ -1,0 +1,12 @@
+package org.example.spotifymixer.runtime;
+import org.junit.Test;import static org.junit.Assert.*;import java.util.*;import java.io.*;import java.nio.charset.StandardCharsets;
+public class CreatorWireTest {
+ private byte[] s(int f,String v){return PlaylistWire.bytes(f,v.getBytes(StandardCharsets.UTF_8));}
+ private String track="spotify:track:0000000000000000000001";
+ @Test public void decodesNestedSearchWithRealNames()throws Exception{byte[] entity=PlaylistWire.join(s(1,track),s(2,"Fixture title"),PlaylistWire.bytes(5,PlaylistWire.bytes(4,s(2,"Fixture artist"))));byte[] root=PlaylistWire.join(PlaylistWire.bytes(1,PlaylistWire.bytes(14,PlaylistWire.bytes(2,entity))),s(4,"next"));CreatorWire.Page p=CreatorWire.search(root);assertEquals("Fixture title",p.tracks.get(0).title);assertEquals("Fixture artist",p.tracks.get(0).artist);assertEquals("next",p.next);}
+ @Test public void ignoresNonTrackAndMissingTitle()throws Exception{assertTrue(CreatorWire.search(PlaylistWire.bytes(1,PlaylistWire.join(s(1,track),s(2,"No track metadata")))).tracks.isEmpty());}
+ @Test public void serializesSingleNativeCreationAndReviewedTracks()throws Exception{byte[] raw=CreatorWire.create("SpotEnhancer-Name",Arrays.asList(new CreatorSession.Track(track,"n","a")));PlaylistWire.Message root=new PlaylistWire.Message(raw),m=root.message(2);assertEquals("",root.string(1));assertEquals("create",m.string(1));assertEquals("start",m.string(2));assertEquals("SpotEnhancer-Name",m.string(4));assertEquals(1,m.integer(5,0));assertEquals(track,m.string(7));}
+ @Test public void requiresSuccessStatusAndNewUri()throws Exception{byte[] result=PlaylistWire.join(PlaylistWire.number(1,1),s(2,"spotify:playlist:0000000000000000000001"));assertEquals("spotify:playlist:0000000000000000000001",CreatorWire.createdUri(PlaylistWire.join(PlaylistWire.bytes(1,PlaylistWire.number(1,200)),PlaylistWire.bytes(2,result))));try{CreatorWire.createdUri(PlaylistWire.bytes(1,PlaylistWire.number(1,403)));fail();}catch(IOException expected){}try{CreatorWire.createdUri(PlaylistWire.bytes(1,PlaylistWire.number(1,200)));fail();}catch(IOException expected){}}
+ @Test public void buildsArtistGenreCombinationsWithoutClaimingAi(){List<String> q=CreatorWire.queries(new CreatorSession.Request("x","rock,soul","Dire Straits,Sade","acoustic",10));assertEquals(4,q.size());assertEquals("genre:\"rock\" artist:\"Dire Straits\" acoustic",q.get(0));}
+ @Test public void malformedSearchFails()throws Exception{try{CreatorWire.search(new byte[]{10,127});fail();}catch(IOException expected){}}
+}

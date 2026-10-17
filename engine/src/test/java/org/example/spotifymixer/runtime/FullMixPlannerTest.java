@@ -1,0 +1,10 @@
+package org.example.spotifymixer.runtime;
+import org.junit.Test;import static org.junit.Assert.*;import java.util.*;
+public class FullMixPlannerTest {
+    static List<String> tracks(int start,int count){List<String> out=new ArrayList<>();for(int i=start;i<start+count;i++)out.add("spotify:track:"+String.format(Locale.ROOT,"%022d",i));return out;}
+    @Test public void includesCompletePlaylistsBeyondOldLimits(){FullMixPlanner.Plan p=FullMixPlanner.plan(Arrays.asList(tracks(0,12001),tracks(12001,300),tracks(12301,200)),Arrays.asList(50,30,20));assertEquals(12501,p.tracks.size());assertEquals(12501,new HashSet<>(p.tracks).size());assertEquals(Arrays.asList(12001,300,200),p.counts);}
+    @Test public void weightsGuidePrefixButExhaustionNeverTruncates(){List<List<String>> sources=Arrays.asList(tracks(0,500),tracks(500,500),tracks(1000,500));FullMixPlanner.Plan p=FullMixPlanner.plan(sources,Arrays.asList(50,30,20));int[] prefix=new int[3];for(String uri:p.tracks.subList(0,100))prefix[Integer.parseInt(uri.substring(uri.length()-4))/500]++;assertArrayEquals(new int[]{50,30,20},prefix);assertEquals(1500,p.tracks.size());}
+    @Test public void deduplicatesAndExcludesZeroAndMalformed(){FullMixPlanner.Plan p=FullMixPlanner.plan(Arrays.asList(Arrays.asList(tracks(0,1).get(0),null,"invalid"),tracks(0,3),tracks(20,5)),Arrays.asList(40,60,0));assertEquals(3,p.tracks.size());assertEquals(0,(int)p.counts.get(2));}
+    @Test public void balancesAddReplaceRemoveAndRejectsDuplicate(){MixConfig c=MixSessionTest.config(false,1,2,3).balance(0,70);assertEquals(70,c.sources.get(0).weight);assertEquals(100,c.sources.stream().mapToInt(s->s.weight).sum());MixConfig replaced=c.select(1,"spotify:playlist:"+MixSessionTest.id(4),"Four");assertEquals(c.sources.get(1).weight,replaced.sources.get(1).weight);assertEquals(100,replaced.remove(0).sources.stream().mapToInt(s->s.weight).sum());try{c.select(1,c.sources.get(0).uri,"duplicate");fail();}catch(IllegalArgumentException expected){}}
+    @Test(expected=IllegalArgumentException.class) public void rejectsInvalidTotal(){FullMixPlanner.plan(Arrays.asList(tracks(0,1),tracks(1,1)),Arrays.asList(50,20));}
+}

@@ -1,0 +1,1 @@
+package p;/** Original optional fixture. */public final class z6o0 {private final Object value;public z6o0(Object value){this.value=value;}public boolean c(){return value!=null;}public Object b(){return value;}}

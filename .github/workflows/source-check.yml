@@ -1,15 +1,16 @@
 name: Source checks
-on:
-  push:
-  pull_request:
+on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify prototype sources
+      - name: Check research parsers and prohibited binaries
         run: |
-          test -f README.md
-          test -f prototype/MixerActivity.java
-          grep -q 'class MixerActivity' prototype/MixerActivity.java
-          echo "Source check passed. No APK was built."
+          python3 -m unittest discover -s tools/tests
+          if git ls-files | grep -Ei '\.(apk|p12|pk8|jks|keystore)$'; then
+            echo 'APK or private key must not be committed'
+            exit 1
+          fi

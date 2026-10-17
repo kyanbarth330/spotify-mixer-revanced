@@ -1,0 +1,1 @@
+package com.spotify.esperanto.esperanto;public class CoroutineClientBase {public final CoroutineTransport transport;public CoroutineClientBase(CoroutineTransport transport){this.transport=transport;}}

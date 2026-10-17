@@ -1,0 +1,1 @@
+package io.reactivex.rxjava3.core;/** Handwritten synchronous fixture, not Rx implementation. */public final class Flowable {public Single y(){return new Single(org.example.spotifymixer.runtime.QueueProtocolFixture.read());}}

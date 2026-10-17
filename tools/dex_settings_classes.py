@@ -14,8 +14,8 @@ def uleb(data, offset):
             return value, offset
     raise ValueError("Invalid ULEB128")
 
-def parse(data):
-    if data[:4] != b"dex\\n":
+def parse(data, pattern=r"settings|preference"):
+    if data[:4] != b"dex\n":
         raise ValueError("Not a DEX")
     u32 = lambda off: struct.unpack_from("<I", data, off)[0]
     s_count, s_off = u32(0x38), u32(0x3c)
@@ -38,7 +38,7 @@ def parse(data):
         off = c_off+32*i
         idx, access, parent, interfaces, source, annotations, class_data, static = struct.unpack_from("<8I", data, off)
         name = types[idx]
-        if re.search(r"settings|preference", name, re.I):
+        if re.search(pattern, name, re.I):
             classes.append({"class": name, "super": types[parent] if parent < len(types) else None,
                             "methods": sorted(methods.get(name, []))[:80]})
     return classes

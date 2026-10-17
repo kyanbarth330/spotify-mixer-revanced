@@ -1,8 +1,12 @@
+.gradle/
+**/build/
+local.properties
 *.apk
-*.apks
-*.aab
 *.jks
 *.keystore
-local.properties
-.gradle/
-build/
+*.pk8
+__pycache__/
+*.p12
+
+server/config.php
+server/*.log
