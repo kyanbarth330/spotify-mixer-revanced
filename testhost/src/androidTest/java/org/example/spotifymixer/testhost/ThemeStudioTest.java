@@ -19,8 +19,12 @@ public class ThemeStudioTest {
     private final UiDevice device=UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
     private final SharedPreferences prefs=context.getSharedPreferences("spotify-mixer-entry-v1",0);
     @Before public void setup(){prefs.edit().clear().putBoolean("theme_enabled",true).putString("theme_preset","ocean").commit();OwnMembership.set(true);}
-    @After public void cleanup(){prefs.edit().clear().commit();OwnMembership.set(true);ThemeRuntime.refresh(context);device.pressHome();}
+    @After public void cleanup(){prefs.edit().clear().commit();OwnMembership.set(true);InstrumentationRegistry.getInstrumentation().runOnMainSync(()->ThemeRuntime.refresh(context));device.pressHome();}
     private UiObject2 find(BySelector selector){UiObject2 view=device.wait(Until.findObject(selector),8000);assertNotNull(selector.toString(),view);return view;}
+    private void capture(String name)throws java.io.IOException{
+        device.waitForIdle();device.executeShellCommand("mkdir -p /sdcard/Download/spotenhancer-evidence");
+        device.executeShellCommand("screencap -p /sdcard/Download/spotenhancer-evidence/"+name+".png");
+    }
     private ActivityScenario<SpotEnhancerActivity> launch(){return ActivityScenario.launch(new Intent(context,SpotEnhancerActivity.class).putExtra("screen","themes").putExtra("from_spotify",true));}
     @Test public void previewFavoritesAndSettingsSurviveRecreationWithoutApplying()throws Exception{
         try(ActivityScenario<SpotEnhancerActivity> scenario=launch()){
@@ -32,14 +36,16 @@ public class ThemeStudioTest {
             scenario.recreate();
             assertEquals("velvet",find(By.desc("Search themes")).getText());
             assertTrue(find(By.desc("Preview Velvet Purple")).isSelected());
-            find(By.text("Settings")).click();find(By.desc("True black")).click();
+            find(By.desc("Search themes")).setText("");capture("20-theme-studio-library-velvet");
+            find(By.text("Settings")).click();capture("21-theme-studio-settings-velvet");find(By.desc("True black")).click();
             assertFalse(prefs.getBoolean("amoled_enabled",false));
             scenario.recreate();
             assertTrue(find(By.desc("True black")).isChecked());
             assertEquals("ocean",prefs.getString("theme_preset",""));
             find(By.text("Apply")).click();device.waitForIdle();
             assertEquals("velvet",prefs.getString("theme_preset",""));assertTrue(prefs.getBoolean("amoled_enabled",false));
-            find(By.text("Restore defaults")).click();find(By.text("Restore")).click();device.waitForIdle();
+            new UiScrollable(new UiSelector().className("android.widget.ScrollView")).scrollTextIntoView("Restore defaults");
+            find(By.text("Restore defaults")).click();find(By.res("android","button1")).click();device.waitForIdle();
             assertFalse(prefs.getBoolean("theme_enabled",true));assertFalse(prefs.getBoolean("amoled_enabled",true));
             assertTrue(prefs.getStringSet("theme_favorites",java.util.Collections.emptySet()).contains("velvet"));
         }

@@ -140,10 +140,10 @@ public class AndroidSmokeTest {
             assertFalse("Preview must not save a palette",prefs.contains("theme_preset"));waitText("Apply").click();awaitSetting(prefs,"theme_preset","ocean");assertTrue(prefs.getBoolean("theme_enabled",false));
             screenshot("13-theme-studio-library");waitText("Settings").click();waitText("Appearance");screenshot("14-theme-studio-settings");
             UiObject2 black=device.wait(Until.findObject(By.desc("True black")),4000);assertNotNull(black);black.click();assertFalse("True black is staged",prefs.getBoolean("amoled_enabled",false));waitText("Apply").click();awaitSetting(prefs,"amoled_enabled",true);
-            waitText("Restore defaults").click();waitText("Restore").click();awaitSetting(prefs,"theme_enabled",false);assertFalse(prefs.getBoolean("amoled_enabled",true));assertFalse(prefs.contains("theme_preset"));
+            waitText("Restore defaults").click();device.wait(Until.findObject(By.res("android","button1")),4000).click();awaitSetting(prefs,"theme_enabled",false);assertFalse(prefs.getBoolean("amoled_enabled",true));assertFalse(prefs.contains("theme_preset"));
             assertFalse(device.wait(Until.findObject(By.desc("Enable themes")),4000).isChecked());
             device.wait(Until.findObject(By.desc("Back to SpotEnhancer")),4000).click();waitText("‹  Back to Spotify").click();waitText("Test library");
-        }finally{prefs.edit().remove("theme_enabled").remove("theme_preset").remove("amoled_enabled").commit();org.example.spotifymixer.runtime.ThemeRuntime.refresh(context);device.pressHome();}
+        }finally{prefs.edit().remove("theme_enabled").remove("theme_preset").remove("amoled_enabled").commit();InstrumentationRegistry.getInstrumentation().runOnMainSync(()->org.example.spotifymixer.runtime.ThemeRuntime.refresh(context));device.pressHome();}
     }
     @Test public void themesMapAndRestoreOwnViewsWithoutTintingArtwork(){
         android.content.SharedPreferences prefs=context.getSharedPreferences(PREFS,0);prefs.edit().clear().commit();
